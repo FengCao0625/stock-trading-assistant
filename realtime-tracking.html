@@ -1,0 +1,1684 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>实时追踪 - 模拟行情</title>
+    <style id="theme-vars">
+/* Stock Trading Assistant — Dark Professional Trading Theme */
+:root {
+  /* === Brand Colors === */
+  --brand-primary: #EF4444;
+  --brand-primary-light: #F87171;
+  --brand-primary-dark: #DC2626;
+  --brand-primary-tint-10: rgba(239,68,68,0.10);
+  --brand-primary-tint-20: rgba(239,68,68,0.20);
+  --brand-primary-tint-40: rgba(239,68,68,0.40);
+
+  /* State colors — semantic only */
+  --state-success: #EF4444;
+  --state-success-bg: rgba(239,68,68,0.12);
+  --state-warning: #F59E0B;
+  --state-warning-bg: rgba(245,158,11,0.12);
+  --state-error: #22C55E;
+  --state-error-bg: rgba(34,197,94,0.12);
+  --state-info: #3B82F6;
+  --state-info-bg: rgba(59,130,246,0.12);
+
+  /* === Surface System === */
+  --surface-bg-base: #0A0E17;
+  --surface-bg-elevated: #111827;
+  --surface-bg-card: #1A2035;
+  --surface-bg-card-hover: #1E2642;
+  --surface-bg-input: #0D1321;
+  --surface-bg-overlay: rgba(0,0,0,0.70);
+
+  --border-default: rgba(255,255,255,0.08);
+  --border-subtle: rgba(255,255,255,0.05);
+  --border-strong: rgba(255,255,255,0.15);
+  --border-focus: rgba(239,68,68,0.50);
+
+  /* === Bridge aliases (required by fill-html-head.mjs @theme inline) === */
+  --brand-background: var(--surface-bg-base);
+  --brand-foreground: var(--text-primary);
+
+  /* === Text === */
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-tertiary: #64748B;
+  --text-inverse: #0F172A;
+  --text-stock-up: #EF4444;
+  --text-stock-down: #22C55E;
+  --text-stock-flat: #94A3B8;
+
+  /* === Typography === */
+  --font-family-display: 'Inter', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-family-body: 'Inter', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 32px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+
+  /* === Radius === */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* === Spacing === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* === Shadows (border-led for static, shadow for floating only) === */
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-floating: 0 8px 24px rgba(0,0,0,0.30);
+  --shadow-modal: 0 16px 48px rgba(0,0,0,0.50);
+}
+
+/* Typography utility classes */
+.brand-display {
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--text-primary);
+}
+
+.brand-body {
+  font-family: var(--font-family-body);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+  color: var(--text-secondary);
+}
+
+.brand-mono {
+  font-family: var(--font-family-mono);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-snug);
+  color: var(--text-primary);
+}
+
+.brand-mono-sm {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+  letter-spacing: 0.02em;
+}
+
+/* Stock-specific utility */
+.stock-up { color: var(--text-stock-up); }
+.stock-down { color: var(--text-stock-down); }
+.stock-flat { color: var(--text-stock-flat); }
+.stock-up-bg { background-color: var(--state-success-bg); }
+.stock-down-bg { background-color: var(--state-error-bg); }
+
+/* Card surface */
+.surface-card {
+  background: var(--surface-bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.surface-card-hover:hover {
+  background: var(--surface-bg-card-hover);
+  border-color: var(--border-strong);
+}
+    </style>
+
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased">
+<style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+  [data-nav-key] {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    cursor: pointer;
+    border-radius: var(--radius-sm, 4px);
+    margin: 2px 8px;
+    transition: background 0.15s ease;
+    text-decoration: none;
+    border-left: 2px solid transparent;
+    background: transparent;
+  }
+  [data-nav-key]:hover {
+    background: rgba(255,255,255,0.04);
+  }
+  [data-nav-key][data-active="true"] {
+    background: rgba(239,68,68,0.10);
+    border-left-color: #EF4444;
+  }
+  [data-nav-key][data-active="true"] svg {
+    stroke: #EF4444;
+  }
+  [data-nav-key][data-active="true"] span {
+    color: #EF4444;
+    font-weight: 500;
+  }
+  body {
+    overflow: hidden !important;
+    margin: 0 !important;
+    background: var(--surface-bg-base) !important;
+    color: var(--text-primary);
+    min-height: auto !important;
+    font-family: var(--font-family-body);
+  }
+
+  /* === Page-specific styles === */
+  .page-main {
+    flex: 1;
+    margin-left: 200px;
+    height: 100vh;
+    overflow-y: auto;
+    padding: var(--space-6);
+  }
+  .page-main::-webkit-scrollbar { width: 6px; }
+  .page-main::-webkit-scrollbar-track { background: transparent; }
+  .page-main::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+
+  .page-title {
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+    margin: 0 0 var(--space-5) 0;
+  }
+
+  /* Search bar */
+  .search-bar { position: relative; margin-bottom: var(--space-5); max-width: 360px; }
+  .search-bar input {
+    width: 100%;
+    height: 38px;
+    background: var(--surface-bg-input);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 0 12px 0 36px;
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    font-family: var(--font-family-body);
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  .search-bar input:focus { border-color: var(--border-focus); }
+  .search-bar input::placeholder { color: var(--text-tertiary); }
+  .search-bar .search-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    pointer-events: none;
+  }
+  #search-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: var(--surface-bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    max-height: 240px;
+    overflow-y: auto;
+    z-index: 50;
+    box-shadow: var(--shadow-floating);
+  }
+  #search-dropdown::-webkit-scrollbar { width: 4px; }
+  #search-dropdown::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+  .search-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background 0.1s;
+    font-size: var(--font-size-base);
+  }
+  .search-item:hover { background: rgba(255,255,255,0.05); }
+  .search-item .si-code { color: var(--text-tertiary); font-family: var(--font-family-mono); font-size: var(--font-size-xs); }
+  .search-item .si-name { color: var(--text-primary); }
+
+  /* Stock header */
+  .stock-header {
+    margin-bottom: var(--space-5);
+    padding-bottom: var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .stock-header h2 {
+    margin: 0 0 var(--space-2) 0;
+    font-family: var(--font-family-display);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--text-primary);
+  }
+  .stock-header h2 .stock-code-label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-normal);
+    color: var(--text-tertiary);
+    font-family: var(--font-family-mono);
+    margin-left: var(--space-2);
+  }
+  .price-display { display: flex; align-items: baseline; gap: var(--space-4); flex-wrap: wrap; }
+  .price-display .price-value {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    line-height: 1.1;
+  }
+  .price-display .price-change {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+  }
+  .holding-info {
+    margin-top: var(--space-2);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+    display: flex;
+    gap: var(--space-6);
+    flex-wrap: wrap;
+  }
+  .holding-info span { white-space: nowrap; }
+  .holding-info .hi-pnl { font-family: var(--font-family-mono); font-weight: var(--font-weight-semibold); }
+
+  /* Two-column grid */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+    margin-bottom: var(--space-5);
+  }
+  @media (max-width: 900px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface-bg-card);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: var(--space-4);
+  }
+  .card + .card { margin-top: var(--space-4); }
+  .card h3 {
+    margin: 0 0 var(--space-3) 0;
+    font-size: var(--font-size-md);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-secondary);
+  }
+
+  /* Order book */
+  #order-book {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-sm);
+    table-layout: fixed;
+  }
+  #order-book td {
+    padding: 5px 8px;
+    text-align: right;
+    white-space: nowrap;
+  }
+  #order-book td:first-child {
+    text-align: left;
+    color: var(--text-tertiary);
+    width: 40px;
+    font-family: var(--font-family-body);
+    font-size: var(--font-size-xs);
+  }
+  #order-book .ask-vol { text-align: right; color: var(--text-secondary); }
+  #order-book .bid-vol { text-align: right; color: var(--text-secondary); }
+  #order-book .ask-price { color: var(--text-stock-down); text-align: right; }
+  #order-book .bid-price { color: var(--text-stock-up); text-align: right; }
+  .ob-divider td {
+    text-align: center !important;
+    padding: 6px 0;
+    color: var(--text-tertiary);
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-xs);
+    border-top: 1px dashed var(--border-default);
+    border-bottom: 1px dashed var(--border-default);
+  }
+
+  /* Volume bars in order book */
+  .ob-row { position: relative; }
+  .ob-row .vol-bar {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    opacity: 0.10;
+    pointer-events: none;
+  }
+  .ob-row.ask-row .vol-bar { background: var(--text-stock-down); }
+  .ob-row.bid-row .vol-bar { background: var(--text-stock-up); }
+
+  /* Tick trades */
+  .tick-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-sm);
+  }
+  .tick-table thead th {
+    text-align: right;
+    padding: 4px 8px;
+    color: var(--text-tertiary);
+    font-weight: var(--font-weight-normal);
+    font-size: var(--font-size-xs);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+  .tick-table thead th:first-child { text-align: left; }
+  .tick-table tbody td {
+    padding: 3px 8px;
+    text-align: right;
+    color: var(--text-secondary);
+  }
+  .tick-table tbody td:first-child { text-align: left; color: var(--text-tertiary); }
+  .tick-table .tf-buy { color: var(--text-stock-up); }
+  .tick-table .tf-sell { color: var(--text-stock-down); }
+  .tick-table .trade-fade-in { opacity: 0; animation: tradeFadeIn 0.25s ease forwards; }
+  @keyframes tradeFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  /* Intraday chart */
+  #intraday-chart { width: 100%; height: 280px; display: block; }
+
+  /* Metrics grid */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    margin-top: var(--space-4);
+  }
+  @media (max-width: 900px) {
+    .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  .metric-item {
+    background: var(--surface-bg-card);
+    padding: var(--space-3);
+    text-align: center;
+  }
+  .metric-item .mi-label {
+    font-size: var(--font-size-xs);
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-1);
+  }
+  .metric-item .mi-value {
+    font-family: var(--font-family-mono);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+  }
+
+  /* Action buttons */
+  .actions {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-6);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 20px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    cursor: pointer;
+    border: none;
+    white-space: nowrap;
+    transition: opacity 0.15s, transform 0.12s;
+    font-family: var(--font-family-body);
+    text-decoration: none;
+    height: 36px;
+    box-sizing: border-box;
+  }
+  .btn:hover { opacity: 0.88; }
+  .btn:active { transform: scale(0.97); }
+  .btn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+  .btn-buy { background: var(--state-success); color: var(--text-inverse); }
+  .btn-sell { background: var(--state-error); color: #fff; }
+  .btn-outline { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-default); }
+  .btn-outline:hover { border-color: var(--border-strong); color: var(--text-primary); }
+  .btn-primary { background: var(--brand-primary); color: var(--text-inverse); font-weight: var(--font-weight-semibold); }
+  .btn-link {
+    background: transparent;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 8px 20px;
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-medium);
+    border: 1px solid var(--border-default);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 36px;
+    box-sizing: border-box;
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .btn-link:hover { border-color: var(--border-strong); color: var(--text-primary); }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--surface-bg-overlay);
+    z-index: 100;
+  }
+  .modal-content {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--surface-bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: var(--space-6);
+    z-index: 101;
+    min-width: 340px;
+    max-width: 420px;
+    box-shadow: var(--shadow-modal);
+  }
+  .modal-content h3 {
+    margin: 0 0 var(--space-5) 0;
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+  }
+  .modal-content label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin-bottom: var(--space-4);
+    font-size: var(--font-size-sm);
+    color: var(--text-secondary);
+  }
+  .modal-content input,
+  .modal-content select {
+    height: 36px;
+    background: var(--surface-bg-input);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    padding: 0 10px;
+    color: var(--text-primary);
+    font-size: var(--font-size-base);
+    font-family: var(--font-family-mono);
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .modal-content input:focus,
+  .modal-content select:focus { border-color: var(--border-focus); }
+  .modal-content select option { background: var(--surface-bg-elevated); color: var(--text-primary); }
+  .modal-amount {
+    margin-bottom: var(--space-5);
+    font-size: var(--font-size-base);
+    color: var(--text-secondary);
+  }
+  .modal-amount span {
+    font-family: var(--font-family-mono);
+    font-weight: var(--font-weight-semibold);
+    color: var(--text-primary);
+  }
+  .modal-actions {
+    display: flex;
+    gap: var(--space-3);
+    justify-content: flex-end;
+  }
+
+  /* Toast */
+  #toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .toast {
+    background: var(--surface-bg-elevated);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    padding: 12px 20px;
+    font-size: var(--font-size-base);
+    color: var(--text-primary);
+    box-shadow: var(--shadow-floating);
+    animation: toastIn 0.3s ease forwards;
+    max-width: 360px;
+    border-left: 3px solid var(--brand-primary);
+  }
+  .toast.toast-out { animation: toastOut 0.3s ease forwards; }
+  .toast.toast-alert { border-left-color: var(--state-warning); }
+  .toast.toast-success { border-left-color: var(--state-success); }
+  @keyframes toastIn { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+  @keyframes toastOut { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(40px); } }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+</style>
+<script>
+(function(){
+  var pageMap = {
+    'dashboard': 'dashboard.html',
+    'screener': 'stock-screener.html',
+    'analysis': 'stock-analysis.html',
+    'tracking': 'realtime-tracking.html',
+    'forecast': 'position-forecast.html'
+  };
+  document.addEventListener('click', function(e) {
+    var nav = e.target.closest('[data-nav-key]');
+    if (!nav) return;
+    var key = nav.getAttribute('data-nav-key');
+    var target = pageMap[key];
+    if (target) window.location.href = target;
+  });
+})();
+</script>
+
+<div style="display:flex; height:100vh; overflow:hidden;">
+
+  <!-- Left Sidebar -->
+  <aside style="width:200px; min-width:200px; height:100vh; background:var(--surface-bg-elevated, #111827); border-right:1px solid var(--border-default, rgba(255,255,255,0.08)); display:flex; flex-direction:column; position:fixed; top:0; left:0; z-index:10;">
+
+    <!-- Branding -->
+    <div style="display:flex; align-items:center; gap:10px; padding:20px 16px 16px;">
+      <div style="width:24px; height:24px; min-width:24px; border-radius:4px; background:var(--brand-primary, #EF4444);"></div>
+      <div style="display:flex; flex-direction:column; gap:2px;">
+        <span style="font-family:var(--font-family-display); font-size:14px; font-weight:700; color:var(--text-primary); line-height:1.2;">上海枫草交易部</span>
+      </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav style="flex:1; padding-top:4px;">
+
+      <div data-nav-key="dashboard" data-dom-id="nav-dashboard">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+        <span style="font-size:var(--font-size-sm, 13px); color:var(--text-tertiary);">总览</span>
+      </div>
+
+      <div data-nav-key="screener" data-dom-id="nav-screener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+        </svg>
+        <span style="font-size:var(--font-size-sm, 13px); color:var(--text-tertiary);">选股</span>
+      </div>
+
+      <div data-nav-key="analysis" data-dom-id="nav-analysis">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 3v18h18"></path>
+          <path d="M7 16l4-8 4 4 4-10"></path>
+        </svg>
+        <span style="font-size:var(--font-size-sm, 13px); color:var(--text-tertiary);">分析</span>
+      </div>
+
+      <div data-nav-key="tracking" data-active="true" data-dom-id="nav-tracking">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+        </svg>
+        <span style="font-size:var(--font-size-sm, 13px); color:var(--text-tertiary);">追踪</span>
+      </div>
+
+      <div data-nav-key="forecast" data-dom-id="nav-forecast">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"></circle>
+          <circle cx="12" cy="12" r="6"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+        </svg>
+        <span style="font-size:var(--font-size-sm, 13px); color:var(--text-tertiary);">仓位</span>
+      </div>
+
+    </nav>
+
+    <!-- Hidden navigation anchors for back-navigation -->
+    <a href="#" class="sr-only" data-dom-id="nav-dashboard">返回总览</a>
+    <a href="#" class="sr-only" data-dom-id="nav-dashboard-hidden">返回总览</a>
+    <a href="#" class="sr-only" data-dom-id="nav-dashboard-hidden-2">返回总览</a>
+    <a href="#" class="sr-only" data-dom-id="nav-dashboard-hidden-3">返回总览</a>
+    <a href="#" class="sr-only" data-dom-id="nav-screener-hidden">返回选股</a>
+    <a href="#" class="sr-only" data-dom-id="nav-screener-hidden-2">返回选股</a>
+    <a href="#" class="sr-only" data-dom-id="nav-screener-hidden-3">返回选股</a>
+    <a href="#" class="sr-only" data-dom-id="nav-analysis-hidden">返回分析</a>
+    <a href="#" class="sr-only" data-dom-id="nav-analysis-hidden-2">返回分析</a>
+    <a href="#" class="sr-only" data-dom-id="nav-tracking-hidden">返回追踪</a>
+
+    <!-- User area -->
+    <div id="user-area" style="margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px 16px; border-top:1px solid var(--border-default, rgba(255,255,255,0.08));">
+      <div id="user-avatar" style="width:32px; height:32px; min-width:32px; border-radius:50%; background:var(--surface-bg-card, #1F2937); border:1px solid var(--border-default, rgba(255,255,255,0.08)); display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:13px; font-weight:500;">李</div>
+      <span id="user-name" style="flex:1; font-size:var(--font-size-sm, 13px); color:var(--text-secondary); line-height:1.3;">李明</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer;">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+      </svg>
+    </div>
+<script>
+(function(){
+  var area = document.getElementById('user-area');
+  var nameEl = document.getElementById('user-name');
+  var avatarEl = document.getElementById('user-avatar');
+  if (!area || !nameEl) return;
+  function loadName() {
+    try { var name = localStorage.getItem('tradeflow_username') || '李明'; } catch(e) { var name = '李明'; }
+    nameEl.textContent = name;
+    if (avatarEl) avatarEl.textContent = name.charAt(0);
+  }
+  loadName();
+  var editing = false;
+  area.addEventListener('click', function(e) {
+    if (editing) return;
+    if (e.target.closest('svg')) return;
+    editing = true;
+    var current = nameEl.textContent;
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.value = current;
+    input.style.cssText = 'height:24px; background:var(--surface-bg-input, #0D1321); border:1px solid var(--border-focus, rgba(239,68,68,0.50)); border-radius:var(--radius-sm, 4px); color:var(--text-primary); font-size:var(--font-size-sm, 13px); padding:0 6px; outline:none; width:100%; font-family:var(--font-family-body);';
+    nameEl.style.display = 'none';
+    nameEl.parentNode.insertBefore(input, nameEl.nextSibling);
+    input.focus();
+    input.select();
+    function finish() {
+      var val = input.value.trim() || current;
+      nameEl.textContent = val;
+      nameEl.style.display = '';
+      if (avatarEl) avatarEl.textContent = val.charAt(0);
+      try { localStorage.setItem('tradeflow_username', val); } catch(e) {}
+      if (input.parentNode) input.parentNode.removeChild(input);
+      editing = false;
+    }
+    input.addEventListener('blur', finish);
+    input.addEventListener('keydown', function(ev) {
+      if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+      if (ev.key === 'Escape') { input.value = current; input.blur(); }
+    });
+  });
+})();
+</script>
+
+    <div style="padding:8px 16px;border-top:1px solid var(--border-default, rgba(255,255,255,0.08));display:flex;gap:6px;">
+      <button onclick="DataMigration.showExportModal()" style="flex:1;height:28px;border-radius:4px;border:1px solid var(--border-default,rgba(255,255,255,0.08));background:var(--surface-bg-card,#1A2035);color:var(--text-secondary,#94A3B8);font-size:11px;cursor:pointer;font-family:var(--font-family-body);transition:background .12s ease,color .12s ease;" onmouseover="this.style.background='rgba(255,255,255,0.06)';this.style.color='#F1F5F9'" onmouseout="this.style.background='var(--surface-bg-card,#1A2035)';this.style.color='var(--text-secondary,#94A3B8)'">导出数据</button>
+      <button onclick="DataMigration.showImportModal()" style="flex:1;height:28px;border-radius:4px;border:1px solid var(--border-default,rgba(255,255,255,0.08));background:var(--surface-bg-card,#1A2035);color:var(--text-secondary,#94A3B8);font-size:11px;cursor:pointer;font-family:var(--font-family-body);transition:background .12s ease,color .12s ease;" onmouseover="this.style.background='rgba(255,255,255,0.06)';this.style.color='#F1F5F9'" onmouseout="this.style.background='var(--surface-bg-card,#1A2035)';this.style.color='var(--text-secondary,#94A3B8)'">导入数据</button>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="page-main">
+    <h1 class="page-title">实时追踪</h1>
+
+    <!-- Search bar -->
+    <div class="search-bar">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      </svg>
+      <input id="search-input" placeholder="输入股票代码或名称搜索" autocomplete="off">
+      <div id="search-dropdown" style="display:none;"></div>
+    </div>
+
+    <!-- Stock header -->
+    <div class="stock-header">
+      <h2>
+        <span id="stock-name">--</span>
+        <span id="stock-code" class="stock-code-label">--</span>
+        <span id="stock-status" style="margin-left:8px;font-size:11px;display:inline-flex;align-items:center;gap:4px;color:var(--state-success);"><span class="pulse-dot" style="width:6px;height:6px;border-radius:50%;background:var(--state-success);display:inline-block;"></span>交易中</span>
+      </h2>
+      <div class="price-display">
+        <span id="stock-price" class="price-value">--</span>
+        <span id="stock-change" class="price-change">--</span>
+      </div>
+      <div id="holding-info" class="holding-info" style="display:none;"></div>
+    </div>
+
+    <!-- Two-column layout -->
+    <div class="two-col">
+
+      <!-- Left: Order book + Trades -->
+      <div>
+        <!-- 5-level order book -->
+        <div class="card">
+          <h3>五档盘口</h3>
+          <table id="order-book">
+            <tbody>
+              <tr class="ob-row ask-row"><td>卖5</td><td class="ask-price" id="ask5-price">--</td><td class="ask-vol" id="ask5-vol">--</td></tr>
+              <tr class="ob-row ask-row"><td>卖4</td><td class="ask-price" id="ask4-price">--</td><td class="ask-vol" id="ask4-vol">--</td></tr>
+              <tr class="ob-row ask-row"><td>卖3</td><td class="ask-price" id="ask3-price">--</td><td class="ask-vol" id="ask3-vol">--</td></tr>
+              <tr class="ob-row ask-row"><td>卖2</td><td class="ask-price" id="ask2-price">--</td><td class="ask-vol" id="ask2-vol">--</td></tr>
+              <tr class="ob-row ask-row"><td>卖1</td><td class="ask-price" id="ask1-price">--</td><td class="ask-vol" id="ask1-vol">--</td></tr>
+              <tr class="ob-divider"><td colspan="3" id="ob-spread">-- --</td></tr>
+              <tr class="ob-row bid-row"><td>买1</td><td class="bid-price" id="bid1-price">--</td><td class="bid-vol" id="bid1-vol">--</td></tr>
+              <tr class="ob-row bid-row"><td>买2</td><td class="bid-price" id="bid2-price">--</td><td class="bid-vol" id="bid2-vol">--</td></tr>
+              <tr class="ob-row bid-row"><td>买3</td><td class="bid-price" id="bid3-price">--</td><td class="bid-vol" id="bid3-vol">--</td></tr>
+              <tr class="ob-row bid-row"><td>买4</td><td class="bid-price" id="bid4-price">--</td><td class="bid-vol" id="bid4-vol">--</td></tr>
+              <tr class="ob-row bid-row"><td>买5</td><td class="bid-price" id="bid5-price">--</td><td class="bid-vol" id="bid5-vol">--</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Recent trades -->
+        <div class="card">
+          <h3>成交明细</h3>
+          <table class="tick-table">
+            <thead>
+              <tr><th>时间</th><th>价格</th><th>数量</th><th>方向</th></tr>
+            </thead>
+            <tbody id="tick-trades">
+              <tr><td colspan="4" style="text-align:center;color:var(--text-tertiary);padding:20px 0;">等待数据...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Right: Intraday chart + Info -->
+      <div>
+        <!-- Intraday chart -->
+        <div class="card">
+          <h3>分时走势</h3>
+          <canvas id="intraday-chart"></canvas>
+        </div>
+
+        <!-- Key metrics -->
+        <div class="metrics-grid">
+          <div class="metric-item"><div class="mi-label">今开</div><div class="mi-value" id="m-open">--</div></div>
+          <div class="metric-item"><div class="mi-label">最高</div><div class="mi-value" id="m-high">--</div></div>
+          <div class="metric-item"><div class="mi-label">最低</div><div class="mi-value" id="m-low">--</div></div>
+          <div class="metric-item"><div class="mi-label">昨收</div><div class="mi-value" id="m-prevclose">--</div></div>
+          <div class="metric-item"><div class="mi-label">成交量</div><div class="mi-value" id="m-volume">--</div></div>
+          <div class="metric-item"><div class="mi-label">成交额</div><div class="mi-value" id="m-amount">--</div></div>
+          <div class="metric-item"><div class="mi-label">振幅</div><div class="mi-value" id="m-amplitude">--</div></div>
+          <div class="metric-item"><div class="mi-label">换手率</div><div class="mi-value" id="m-turnover">--</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="actions">
+      <button id="btn-buy" class="btn btn-buy" onclick="simulateTrade('buy')">买入</button>
+      <button id="btn-sell" class="btn btn-sell" onclick="simulateTrade('sell')">卖出</button>
+      <button id="btn-watchlist" class="btn btn-outline" onclick="toggleWatchlist()">加自选</button>
+      <button class="btn btn-outline" onclick="setAlert()">预警设置</button>
+      <a href="position-forecast.html" class="btn-link">仓位预测</a>
+    </div>
+  </main>
+</div>
+
+<!-- Trade modal -->
+<div id="trade-modal" style="display:none;">
+  <div class="modal-overlay" onclick="closeTradeModal()"></div>
+  <div class="modal-content">
+    <h3 id="trade-modal-title">买入 --</h3>
+    <label>价格 <input id="trade-price" type="number" step="0.01"></label>
+    <label>手数 <input id="trade-lots" type="number" min="1" value="1" oninput="updateTradeAmount()"></label>
+    <div class="modal-amount">预估金额: <span id="trade-amount">--</span></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeTradeModal()">取消</button>
+      <button id="trade-confirm-btn" class="btn btn-buy" onclick="confirmTrade()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alert modal -->
+<div id="alert-modal" style="display:none;">
+  <div class="modal-overlay" onclick="closeAlertModal()"></div>
+  <div class="modal-content">
+    <h3>预警设置</h3>
+    <label>
+      类型
+      <select id="alert-type">
+        <option value="price_above">价格高于</option>
+        <option value="price_below">价格低于</option>
+        <option value="change_above">涨幅超过</option>
+        <option value="change_below">跌幅超过</option>
+      </select>
+    </label>
+    <label>数值 (%) <input id="alert-value" type="number" step="0.01"></label>
+    <div id="alert-list" style="margin-bottom:16px;max-height:120px;overflow-y:auto;font-size:12px;color:var(--text-secondary);"></div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeAlertModal()">取消</button>
+      <button class="btn btn-primary" onclick="confirmAlert()">设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  // === State ===
+  var currentCode = null;
+  var tradeDirection = 'buy';
+  var chartPoints = [];
+  var tickTrades = [];
+  var searchTimer = null;
+
+  // === Helpers ===
+  function $(id) { return document.getElementById(id); }
+  function fmt(n, d) {
+    if (n == null || isNaN(n)) return '--';
+    return Number(n).toFixed(d == null ? 2 : d);
+  }
+  function fmtVol(n) {
+    if (n == null || isNaN(n)) return '--';
+    if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return String(n);
+  }
+  function fmtAmount(n) {
+    if (n == null || isNaN(n)) return '--';
+    if (n >= 100000000) return (n / 100000000).toFixed(2) + '亿';
+    if (n >= 10000) return (n / 10000).toFixed(1) + '万';
+    return fmt(n, 0);
+  }
+  function priceColor(cur, prev) {
+    if (prev == null || prev === 0) return 'var(--text-stock-flat)';
+    if (cur > prev) return 'var(--text-stock-up)';
+    if (cur < prev) return 'var(--text-stock-down)';
+    return 'var(--text-stock-flat)';
+  }
+  function nowHHMM() {
+    var d = new Date();
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+  }
+  function getLS(key, def) { try { var v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+  function setLS(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch(e) {} }
+
+  // === Toast ===
+  function showToast(msg, type) {
+    var c = $('toast-container');
+    var t = document.createElement('div');
+    t.className = 'toast' + (type ? ' toast-' + type : '');
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(function() { t.classList.add('toast-out'); }, 3000);
+    setTimeout(function() { if (t.parentNode) t.parentNode.removeChild(t); }, 3400);
+  }
+
+  // === Initialization ===
+  function getInitialCode() {
+    var params = new URLSearchParams(window.location.search);
+    var code = params.get('code');
+    if (code) return code;
+    return '600519';
+  }
+
+  function switchStock(code) {
+    currentCode = code;
+    chartPoints = [];
+    tickTrades = [];
+    $('tick-trades').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-tertiary);padding:20px 0;">等待数据...</td></tr>';
+    // Update URL without reload
+    var url = new URL(window.location);
+    url.searchParams.set('code', code);
+    window.history.replaceState({}, '', url);
+    updateWatchlistButton();
+  }
+
+  // === Search ===
+  function initSearch() {
+    var input = $('search-input');
+    var dropdown = $('search-dropdown');
+
+    function doSearch() {
+      var q = input.value.trim();
+      if (!q) { dropdown.style.display = 'none'; return; }
+      var sim = window.MarketSimulator;
+      if (!sim || !sim.STOCK_MAP) { dropdown.style.display = 'none'; return; }
+      var results = [];
+      var map = sim.STOCK_MAP;
+      var keys = Object.keys(map);
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        var info = map[k];
+        if (k.indexOf(q) !== -1 || info.name.indexOf(q) !== -1) {
+          results.push({ code: k, name: info.name });
+        }
+        if (results.length >= 8) break;
+      }
+      if (results.length === 0) { dropdown.style.display = 'none'; return; }
+      var html = '';
+      for (var j = 0; j < results.length; j++) {
+        html += '<div class="search-item" data-code="' + results[j].code + '">' +
+          '<span class="si-name">' + results[j].name + '</span>' +
+          '<span class="si-code">' + results[j].code + '</span></div>';
+      }
+      dropdown.innerHTML = html;
+      dropdown.style.display = 'block';
+    }
+
+    input.addEventListener('input', function() {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(doSearch, 300);
+    });
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        clearTimeout(searchTimer);
+        doSearch();
+        // If exactly one result, select it
+        var items = dropdown.querySelectorAll('.search-item');
+        if (items.length === 1) {
+          switchStock(items[0].getAttribute('data-code'));
+          dropdown.style.display = 'none';
+          input.value = '';
+          input.blur();
+        }
+      }
+    });
+
+    dropdown.addEventListener('click', function(e) {
+      var item = e.target.closest('.search-item');
+      if (!item) return;
+      switchStock(item.getAttribute('data-code'));
+      dropdown.style.display = 'none';
+      input.value = '';
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.search-bar')) dropdown.style.display = 'none';
+    });
+  }
+
+  // === Price Display ===
+  function updatePriceDisplay(stock) {
+    if (!stock) return;
+    var code = stock.code || currentCode;
+    var sim = window.MarketSimulator;
+    var info = sim.STOCK_MAP ? sim.STOCK_MAP[code] : null;
+    var name = info ? info.name : code;
+    var exchange = (code.charAt(0) === '6' || code.charAt(0) === '5') ? 'SH' : 'SZ';
+
+    $('stock-name').textContent = name;
+    $('stock-code').textContent = code + '.' + exchange;
+
+    var price = stock.price;
+    var prevClose = stock.prevClose;
+    var color = priceColor(price, prevClose);
+    var change = price - prevClose;
+    var changePct = prevClose ? (change / prevClose * 100) : 0;
+    var sign = change >= 0 ? '+' : '';
+
+    $('stock-price').textContent = fmt(price);
+    $('stock-price').style.color = color;
+    $('stock-change').textContent = sign + fmt(change) + ' (' + sign + fmt(changePct) + '%)';
+    $('stock-change').style.color = color;
+  }
+
+  // === Holdings Info ===
+  function updateHoldingInfo() {
+    var holdings = getLS('tradeflow_holdings', {});
+    var h = holdings[currentCode];
+    var el = $('holding-info');
+    if (!h || !h.lots || h.lots <= 0) {
+      el.style.display = 'none';
+      return;
+    }
+    var sim = window.MarketSimulator;
+    var stock = sim ? sim.getStock(currentCode) : null;
+    var curPrice = stock ? stock.price : 0;
+    var pnl = (curPrice - h.avgPrice) * h.lots * 100;
+    var pnlPct = h.avgPrice ? ((curPrice - h.avgPrice) / h.avgPrice * 100) : 0;
+    var pnlColor = pnl >= 0 ? 'var(--text-stock-up)' : 'var(--text-stock-down)';
+    el.style.display = 'flex';
+    el.innerHTML =
+      '<span>持有: <strong style="color:var(--text-primary)">' + h.lots + ' 手</strong></span>' +
+      '<span>成本: <strong style="color:var(--text-primary)">' + fmt(h.avgPrice) + '</strong></span>' +
+      '<span>盈亏: <strong class="hi-pnl" style="color:' + pnlColor + '">' + (pnl >= 0 ? '+' : '') + fmt(pnl) + ' (' + (pnl >= 0 ? '+' : '') + fmt(pnlPct) + '%)</strong></span>';
+  }
+
+  // === Order Book ===
+  function updateOrderBook(stock) {
+    if (!stock) return;
+    var price = stock.price;
+    var step = Math.max(price * 0.001, 0.01);
+    // Generate 5 ask levels (above current price)
+    var asks = [];
+    var bids = [];
+    for (var i = 1; i <= 5; i++) {
+      asks.push({
+        price: price + step * i + (Math.random() - 0.3) * step * 0.5,
+        vol: Math.floor(Math.random() * 500 + 50)
+      });
+      bids.push({
+        price: price - step * i + (Math.random() - 0.7) * step * 0.5,
+        vol: Math.floor(Math.random() * 500 + 50)
+      });
+    }
+    // Sort asks ascending (closest first)
+    asks.sort(function(a, b) { return a.price - b.price; });
+    // Sort bids descending (closest first)
+    bids.sort(function(a, b) { return b.price - a.price; });
+
+    var maxVol = 0;
+    for (var j = 0; j < 5; j++) {
+      if (asks[j].vol > maxVol) maxVol = asks[j].vol;
+      if (bids[j].vol > maxVol) maxVol = bids[j].vol;
+    }
+
+    // Render asks (sell 5 to sell 1, so reverse order: index 4 down to 0)
+    for (var a = 4; a >= 0; a--) {
+      var lvl = a + 1;
+      $('ask' + lvl + '-price').textContent = fmt(asks[a].price);
+      $('ask' + lvl + '-vol').textContent = fmtVol(asks[a].vol);
+    }
+    // Render bids
+    for (var b = 0; b < 5; b++) {
+      var lvl2 = b + 1;
+      $('bid' + lvl2 + '-price').textContent = fmt(bids[b].price);
+      $('bid' + lvl2 + '-vol').textContent = fmtVol(bids[b].vol);
+    }
+
+    // Spread
+    var spread = asks[0].price - bids[0].price;
+    $('ob-spread').textContent = '价差 ' + fmt(spread) + ' (' + (asks[0].vol + bids[0].vol) + ' 手)';
+
+    // Store for tick generation
+    window._rtOrderBook = { asks: asks, bids: bids };
+  }
+
+  // === Tick Trades ===
+  function generateTickTrades(stock) {
+    if (!stock) return;
+    var ob = window._rtOrderBook;
+    if (!ob) return;
+
+    var count = Math.floor(Math.random() * 3) + 1;
+    var prevClose = stock.prevClose;
+    for (var i = 0; i < count; i++) {
+      var isBuy = Math.random() > 0.5;
+      var levels = isBuy ? ob.asks : ob.bids;
+      var lvl = levels[Math.floor(Math.random() * levels.length)];
+      var vol = Math.floor(Math.random() * 20 + 1); // 1-20 lots
+      tickTrades.unshift({
+        time: nowHHMM(),
+        price: lvl.price,
+        vol: vol,
+        dir: isBuy ? 'buy' : 'sell',
+        priceColor: priceColor(lvl.price, prevClose)
+      });
+    }
+    // Keep last 20
+    if (tickTrades.length > 20) tickTrades.length = 20;
+  }
+
+  function renderTickTrades() {
+    var tbody = $('tick-trades');
+    if (tickTrades.length === 0) return;
+    var html = '';
+    for (var i = 0; i < tickTrades.length; i++) {
+      var t = tickTrades[i];
+      var cls = i === 0 ? ' trade-fade-in' : '';
+      var dirClass = t.dir === 'buy' ? 'tf-buy' : 'tf-sell';
+      var dirText = t.dir === 'buy' ? '买入' : '卖出';
+      html += '<tr class="' + cls + '">' +
+        '<td>' + t.time + '</td>' +
+        '<td style="color:' + t.priceColor + '">' + fmt(t.price) + '</td>' +
+        '<td>' + t.vol + '</td>' +
+        '<td class="' + dirClass + '">' + dirText + '</td></tr>';
+    }
+    tbody.innerHTML = html;
+  }
+
+  // === Metrics ===
+  function updateMetrics(stock) {
+    if (!stock) return;
+    var high = stock.high || stock.price;
+    var low = stock.low || stock.price;
+    var open = stock.open || stock.price;
+    var prevClose = stock.prevClose;
+    var volume = stock.volume || 0;
+    var amount = stock.amount || (volume * stock.price);
+
+    $('m-open').textContent = fmt(open);
+    $('m-open').style.color = priceColor(open, prevClose);
+    $('m-high').textContent = fmt(high);
+    $('m-high').style.color = priceColor(high, prevClose);
+    $('m-low').textContent = fmt(low);
+    $('m-low').style.color = priceColor(low, prevClose);
+    $('m-prevclose').textContent = fmt(prevClose);
+
+    $('m-volume').textContent = fmtVol(volume) + '手';
+    $('m-amount').textContent = fmtAmount(amount);
+
+    // Amplitude
+    var amplitude = prevClose ? ((high - low) / prevClose * 100) : 0;
+    $('m-amplitude').textContent = fmt(amplitude) + '%';
+
+    // Turnover rate (estimated)
+    var sim = window.MarketSimulator;
+    var info = sim && sim.STOCK_MAP ? sim.STOCK_MAP[currentCode] : null;
+    var totalShares = info ? (info.totalShares || 1000000000) : 1000000000;
+    var turnover = (volume * 100) / totalShares * 100;
+    $('m-turnover').textContent = fmt(turnover) + '%';
+  }
+
+  // === Intraday Chart ===
+  var chartCanvas, chartCtx, chartDPR;
+
+  function initChart() {
+    chartCanvas = $('intraday-chart');
+    chartDPR = window.devicePixelRatio || 1;
+    resizeChart();
+    window.addEventListener('resize', resizeChart);
+  }
+
+  function resizeChart() {
+    var rect = chartCanvas.parentElement.getBoundingClientRect();
+    var w = rect.width - 32; // card padding
+    var h = 280;
+    chartCanvas.style.width = w + 'px';
+    chartCanvas.style.height = h + 'px';
+    chartCanvas.width = w * chartDPR;
+    chartCanvas.height = h * chartDPR;
+    chartCtx = chartCanvas.getContext('2d');
+    chartCtx.scale(chartDPR, chartDPR);
+  }
+
+  function drawChart() {
+    if (!chartCtx) return;
+    var w = chartCanvas.width / chartDPR;
+    var h = chartCanvas.height / chartDPR;
+    var ctx = chartCtx;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Background
+    ctx.fillStyle = '#0D1321';
+    ctx.fillRect(0, 0, w, h);
+
+    if (chartPoints.length < 2) {
+      ctx.fillStyle = '#64748B';
+      ctx.font = '12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('等待数据...', w / 2, h / 2);
+      return;
+    }
+
+    var sim = window.MarketSimulator;
+    var stock = sim ? sim.getStock(currentCode) : null;
+    var prevClose = stock ? stock.prevClose : chartPoints[0].price;
+    if (!prevClose) prevClose = chartPoints[0].price;
+
+    // Price range centered on prevClose +/- 2%
+    var range = prevClose * 0.02;
+    var yMin = prevClose - range;
+    var yMax = prevClose + range;
+    var padTop = 20, padBot = 24, padLeft = 52, padRight = 12;
+    var plotW = w - padLeft - padRight;
+    var plotH = h - padTop - padBot;
+
+    function toX(i) { return padLeft + (i / (chartPoints.length - 1)) * plotW; }
+    function toY(p) { return padTop + (1 - (p - yMin) / (yMax - yMin)) * plotH; }
+
+    var isUp = chartPoints[chartPoints.length - 1].price >= prevClose;
+    var lineColor = isUp ? '#EF4444' : '#22C55E';
+    var fillColor = isUp ? 'rgba(239,68,68,0.08)' : 'rgba(34,197,94,0.08)';
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    var gridSteps = 4;
+    for (var g = 0; g <= gridSteps; g++) {
+      var gy = padTop + (g / gridSteps) * plotH;
+      ctx.beginPath();
+      ctx.moveTo(padLeft, gy);
+      ctx.lineTo(w - padRight, gy);
+      ctx.stroke();
+    }
+
+    // PrevClose dashed line
+    var prevY = toY(prevClose);
+    if (prevY >= padTop && prevY <= padTop + plotH) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(padLeft, prevY);
+      ctx.lineTo(w - padRight, prevY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Label
+      ctx.fillStyle = '#94A3B8';
+      ctx.font = '10px monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText(fmt(prevClose), padLeft - 4, prevY + 3);
+    }
+
+    // Y-axis labels
+    ctx.fillStyle = '#64748B';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'right';
+    for (var yl = 0; yl <= gridSteps; yl++) {
+      var yPrice = yMax - (yl / gridSteps) * (yMax - yMin);
+      var yPos = padTop + (yl / gridSteps) * plotH;
+      ctx.fillText(fmt(yPrice), padLeft - 4, yPos + 3);
+    }
+
+    // Area fill
+    ctx.beginPath();
+    ctx.moveTo(toX(0), toY(chartPoints[0].price));
+    for (var ai = 1; ai < chartPoints.length; ai++) {
+      ctx.lineTo(toX(ai), toY(chartPoints[ai].price));
+    }
+    ctx.lineTo(toX(chartPoints.length - 1), padTop + plotH);
+    ctx.lineTo(toX(0), padTop + plotH);
+    ctx.closePath();
+    ctx.fillStyle = fillColor;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(toX(0), toY(chartPoints[0].price));
+    for (var li = 1; li < chartPoints.length; li++) {
+      ctx.lineTo(toX(li), toY(chartPoints[li].price));
+    }
+    ctx.strokeStyle = lineColor;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Current price dot
+    var lastPt = chartPoints[chartPoints.length - 1];
+    var lx = toX(chartPoints.length - 1);
+    var ly = toY(lastPt.price);
+    ctx.beginPath();
+    ctx.arc(lx, ly, 3, 0, Math.PI * 2);
+    ctx.fillStyle = lineColor;
+    ctx.fill();
+
+    // X-axis time labels
+    ctx.fillStyle = '#64748B';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'center';
+    var step = Math.max(1, Math.floor(chartPoints.length / 6));
+    for (var xi = 0; xi < chartPoints.length; xi += step) {
+      ctx.fillText(chartPoints[xi].time, toX(xi), h - 6);
+    }
+    // Always show last time
+    if (chartPoints.length > 1) {
+      ctx.fillText(chartPoints[chartPoints.length - 1].time, toX(chartPoints.length - 1), h - 6);
+    }
+
+    // Current price label on right
+    ctx.fillStyle = lineColor;
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(fmt(lastPt.price), lx + 6, ly + 4);
+  }
+
+  // === Watchlist ===
+  function updateWatchlistButton() {
+    var wl = getLS('tradeflow_watchlist', []);
+    var btn = $('btn-watchlist');
+    if (wl.indexOf(currentCode) !== -1) {
+      btn.textContent = '已自选';
+      btn.style.borderColor = 'var(--brand-primary)';
+      btn.style.color = 'var(--brand-primary)';
+    } else {
+      btn.textContent = '加自选';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+    }
+  }
+
+  window.toggleWatchlist = function() {
+    var wl = getLS('tradeflow_watchlist', []);
+    var idx = wl.indexOf(currentCode);
+    var sim = window.MarketSimulator;
+    if (idx !== -1) {
+      wl.splice(idx, 1);
+      if (sim && sim.removeFromWatchlist) sim.removeFromWatchlist(currentCode);
+      showToast('已从自选移除', 'success');
+    } else {
+      wl.push(currentCode);
+      if (sim && sim.addToWatchlist) sim.addToWatchlist(currentCode);
+      showToast('已加入自选', 'success');
+    }
+    setLS('tradeflow_watchlist', wl);
+    updateWatchlistButton();
+  };
+
+  // === Trade Modal ===
+  window.simulateTrade = function(dir) {
+    tradeDirection = dir;
+    var sim = window.MarketSimulator;
+    var stock = sim ? sim.getStock(currentCode) : null;
+    if (!stock) { showToast('无法获取行情数据'); return; }
+
+    var info = sim.STOCK_MAP ? sim.STOCK_MAP[currentCode] : null;
+    var name = info ? info.name : currentCode;
+
+    $('trade-modal-title').textContent = (dir === 'buy' ? '买入 ' : '卖出 ') + name;
+    $('trade-price').value = fmt(stock.price);
+    $('trade-lots').value = 1;
+    updateTradeAmount();
+
+    var confirmBtn = $('trade-confirm-btn');
+    if (dir === 'buy') {
+      confirmBtn.className = 'btn btn-buy';
+      confirmBtn.textContent = '确认买入';
+    } else {
+      confirmBtn.className = 'btn btn-sell';
+      confirmBtn.textContent = '确认卖出';
+    }
+
+    $('trade-modal').style.display = 'block';
+  };
+
+  window.updateTradeAmount = function() {
+    var price = parseFloat($('trade-price').value) || 0;
+    var lots = parseInt($('trade-lots').value) || 0;
+    var amount = price * lots * 100;
+    $('trade-amount').textContent = amount > 0 ? fmtAmount(amount) + ' 元' : '--';
+  };
+
+  window.closeTradeModal = function() {
+    $('trade-modal').style.display = 'none';
+  };
+
+  window.confirmTrade = function() {
+    var sim = window.MarketSimulator;
+    if (!sim) { showToast('模拟器未就绪'); return; }
+
+    var price = parseFloat($('trade-price').value);
+    var lots = parseInt($('trade-lots').value);
+    if (!price || price <= 0 || !lots || lots <= 0) {
+      showToast('请输入有效的价格和手数');
+      return;
+    }
+
+    var stock = sim.getStock(currentCode);
+    var info = sim.STOCK_MAP ? sim.STOCK_MAP[currentCode] : null;
+    var name = info ? info.name : currentCode;
+
+    // Record trade
+    var trade = {
+      code: currentCode,
+      name: name,
+      direction: tradeDirection,
+      price: price,
+      lots: lots,
+      amount: price * lots * 100,
+      time: new Date().toISOString()
+    };
+
+    if (sim.addMyTrade) sim.addMyTrade(trade);
+
+    // Update holdings
+    var holdings = getLS('tradeflow_holdings', {});
+    if (tradeDirection === 'buy') {
+      var existing = holdings[currentCode];
+      if (existing) {
+        var totalCost = existing.avgPrice * existing.lots * 100 + price * lots * 100;
+        var totalLots = existing.lots + lots;
+        existing.avgPrice = totalCost / (totalLots * 100);
+        existing.lots = totalLots;
+      } else {
+        holdings[currentCode] = { lots: lots, avgPrice: price };
+      }
+      showToast('买入成功: ' + name + ' ' + lots + '手 @ ' + fmt(price), 'success');
+    } else {
+      var ex = holdings[currentCode];
+      if (!ex || ex.lots < lots) {
+        showToast('持仓不足，无法卖出');
+        return;
+      }
+      ex.lots -= lots;
+      if (ex.lots <= 0) {
+        delete holdings[currentCode];
+      }
+      showToast('卖出成功: ' + name + ' ' + lots + '手 @ ' + fmt(price), 'success');
+    }
+    setLS('tradeflow_holdings', holdings);
+    updateHoldingInfo();
+    closeTradeModal();
+  };
+
+  // Also update amount when price changes
+  $('trade-price').addEventListener('input', updateTradeAmount);
+
+  // === Alert Modal ===
+  window.setAlert = function() {
+    renderAlertList();
+    $('alert-modal').style.display = 'block';
+  };
+
+  window.closeAlertModal = function() {
+    $('alert-modal').style.display = 'none';
+  };
+
+  window.confirmAlert = function() {
+    var type = $('alert-type').value;
+    var value = parseFloat($('alert-value').value);
+    if (isNaN(value)) { showToast('请输入有效数值'); return; }
+
+    var alerts = getLS('tradeflow_alerts', []);
+    var sim = window.MarketSimulator;
+    var info = sim && sim.STOCK_MAP ? sim.STOCK_MAP[currentCode] : null;
+    var name = info ? info.name : currentCode;
+
+    alerts.push({
+      code: currentCode,
+      name: name,
+      type: type,
+      value: value,
+      triggered: false,
+      createdAt: new Date().toISOString()
+    });
+    setLS('tradeflow_alerts', alerts);
+    renderAlertList();
+    showToast('预警已设置');
+  };
+
+  function renderAlertList() {
+    var alerts = getLS('tradeflow_alerts', []);
+    var stockAlerts = alerts.filter(function(a) { return a.code === currentCode && !a.triggered; });
+    var el = $('alert-list');
+    if (stockAlerts.length === 0) {
+      el.innerHTML = '<div style="color:var(--text-tertiary);">当前股票无活跃预警</div>';
+      return;
+    }
+    var typeNames = {
+      price_above: '价格高于',
+      price_below: '价格低于',
+      change_above: '涨幅超过',
+      change_below: '跌幅超过'
+    };
+    var html = '';
+    for (var i = 0; i < stockAlerts.length; i++) {
+      var a = stockAlerts[i];
+      html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid var(--border-subtle);">' +
+        '<span>' + typeNames[a.type] + ' ' + (a.type.indexOf('change') !== -1 ? a.value + '%' : fmt(a.value)) + '</span>' +
+        '<span style="cursor:pointer;color:var(--text-tertiary);" onclick="removeAlert(' + i + ')">x</span></div>';
+    }
+    el.innerHTML = html;
+  }
+
+  window.removeAlert = function(displayIdx) {
+    var alerts = getLS('tradeflow_alerts', []);
+    var stockAlerts = [];
+    var otherAlerts = [];
+    for (var i = 0; i < alerts.length; i++) {
+      if (alerts[i].code === currentCode && !alerts[i].triggered) {
+        stockAlerts.push(alerts[i]);
+      } else {
+        otherAlerts.push(alerts[i]);
+      }
+    }
+    stockAlerts.splice(displayIdx, 1);
+    setLS('tradeflow_alerts', otherAlerts.concat(stockAlerts));
+    renderAlertList();
+  };
+
+  function checkAlerts(stock) {
+    if (!stock) return;
+    var alerts = getLS('tradeflow_alerts', []);
+    var changed = false;
+    for (var i = 0; i < alerts.length; i++) {
+      var a = alerts[i];
+      if (a.code !== currentCode || a.triggered) continue;
+      var trigger = false;
+      var msg = '';
+      if (a.type === 'price_above' && stock.price >= a.value) {
+        trigger = true;
+        msg = a.name + ' 价格达到 ' + fmt(stock.price) + '，高于预设 ' + fmt(a.value);
+      } else if (a.type === 'price_below' && stock.price <= a.value) {
+        trigger = true;
+        msg = a.name + ' 价格跌至 ' + fmt(stock.price) + '，低于预设 ' + fmt(a.value);
+      } else if (a.type === 'change_above' || a.type === 'change_below') {
+        var changePct = stock.prevClose ? ((stock.price - stock.prevClose) / stock.prevClose * 100) : 0;
+        if (a.type === 'change_above' && changePct >= a.value) {
+          trigger = true;
+          msg = a.name + ' 涨幅达到 ' + fmt(changePct) + '%，超过预设 ' + a.value + '%';
+        } else if (a.type === 'change_below' && changePct <= -a.value) {
+          trigger = true;
+          msg = a.name + ' 跌幅达到 ' + fmt(Math.abs(changePct)) + '%，超过预设 ' + a.value + '%';
+        }
+      }
+      if (trigger) {
+        a.triggered = true;
+        changed = true;
+        showToast(msg, 'alert');
+      }
+    }
+    if (changed) setLS('tradeflow_alerts', alerts);
+  }
+
+  // === Main Tick ===
+  var tickCount = 0;
+  function tick() {
+    var sim = window.MarketSimulator;
+    if (!sim || !sim.getStock || !currentCode) return;
+
+    var stock = sim.getStock(currentCode);
+    if (!stock) return;
+
+    // Update chart points (every tick)
+    chartPoints.push({ time: nowHHMM(), price: stock.price });
+    if (chartPoints.length > 360) chartPoints.shift(); // ~1 hour at 1s/tick
+
+    // Update all UI
+    updatePriceDisplay(stock);
+    updateOrderBook(stock);
+    generateTickTrades(stock);
+    renderTickTrades();
+    updateMetrics(stock);
+    updateHoldingInfo();
+    checkAlerts(stock);
+
+    // Redraw chart
+    drawChart();
+
+    tickCount++;
+  }
+
+  // === Init on simulator ready ===
+  function init() {
+    currentCode = getInitialCode();
+    switchStock(currentCode);
+    initSearch();
+    initChart();
+
+    // Start ticking
+    if (window.MarketSimulator) {
+      startTicking();
+    } else {
+      // Wait for simulator
+      var checkInterval = setInterval(function() {
+        if (window.MarketSimulator) {
+          clearInterval(checkInterval);
+          startTicking();
+        }
+      }, 100);
+    }
+  }
+
+  function startTicking() {
+    tick(); // First tick immediately
+    setInterval(tick, 1000);
+  }
+
+  // Keyboard shortcut: Escape closes modals
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      closeTradeModal();
+      closeAlertModal();
+    }
+  });
+
+  // Run init when DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+})();
+</script>
+<script src="data-migration.js"></script>
+<script src="market-simulator.js?v=8"></script>
+</body>
+</html>

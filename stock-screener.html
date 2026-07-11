@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能选股 - 上海枫草交易部</title>
+    <style id="theme-vars">
+/* Stock Trading Assistant — Dark Professional Trading Theme */
+:root {
+  /* === Brand Colors === */
+  --brand-primary: #EF4444;
+  --brand-primary-light: #F87171;
+  --brand-primary-dark: #DC2626;
+  --brand-primary-tint-10: rgba(239,68,68,0.10);
+  --brand-primary-tint-20: rgba(239,68,68,0.20);
+  --brand-primary-tint-40: rgba(239,68,68,0.40);
+
+  /* State colors — semantic only */
+  --state-success: #EF4444;
+  --state-success-bg: rgba(239,68,68,0.12);
+  --state-warning: #F59E0B;
+  --state-warning-bg: rgba(245,158,11,0.12);
+  --state-error: #22C55E;
+  --state-error-bg: rgba(34,197,94,0.12);
+  --state-info: #3B82F6;
+  --state-info-bg: rgba(59,130,246,0.12);
+
+  /* === Surface System === */
+  --surface-bg-base: #0A0E17;
+  --surface-bg-elevated: #111827;
+  --surface-bg-card: #1A2035;
+  --surface-bg-card-hover: #1E2642;
+  --surface-bg-input: #0D1321;
+  --surface-bg-overlay: rgba(0,0,0,0.70);
+
+  --border-default: rgba(255,255,255,0.08);
+  --border-subtle: rgba(255,255,255,0.05);
+  --border-strong: rgba(255,255,255,0.15);
+  --border-focus: rgba(239,68,68,0.50);
+
+  /* === Bridge aliases (required by fill-html-head.mjs @theme inline) === */
+  --brand-background: var(--surface-bg-base);
+  --brand-foreground: var(--text-primary);
+
+  /* === Text === */
+  --text-primary: #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-tertiary: #64748B;
+  --text-inverse: #0F172A;
+  --text-stock-up: #EF4444;
+  --text-stock-down: #22C55E;
+  --text-stock-flat: #94A3B8;
+
+  /* === Typography === */
+  --font-family-display: 'Inter', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-family-body: 'Inter', -apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-family-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', 'Consolas', monospace;
+
+  --font-size-xs: 11px;
+  --font-size-sm: 12px;
+  --font-size-base: 13px;
+  --font-size-md: 14px;
+  --font-size-lg: 16px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 32px;
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.25;
+  --line-height-snug: 1.35;
+  --line-height-normal: 1.5;
+
+  /* === Radius === */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+
+  /* === Spacing === */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* === Shadows (border-led for static, shadow for floating only) === */
+  --shadow-none: none;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-floating: 0 8px 24px rgba(0,0,0,0.30);
+  --shadow-modal: 0 16px 48px rgba(0,0,0,0.50);
+}
+
+/* Typography utility classes */
+.brand-display {
+  font-family: var(--font-family-display);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  color: var(--text-primary);
+}
+
+.brand-body {
+  font-family: var(--font-family-body);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+  color: var(--text-secondary);
+}
+
+.brand-mono {
+  font-family: var(--font-family-mono);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-snug);
+  color: var(--text-primary);
+}
+
+.brand-mono-sm {
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-snug);
+  letter-spacing: 0.02em;
+}
+
+/* Stock-specific utility */
+.stock-up { color: var(--text-stock-up); }
+.stock-down { color: var(--text-stock-down); }
+.stock-flat { color: var(--text-stock-flat); }
+.stock-up-bg { background-color: var(--state-success-bg); }
+.stock-down-bg { background-color: var(--state-error-bg); }
+
+/* Card surface */
+.surface-card {
+  background: var(--surface-bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+}
+
+.surface-card-hover:hover {
+  background: var(--surface-bg-card-hover);
+  border-color: var(--border-strong);
+}
+    </style>
+
+    <style>
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+      [data-icon] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        -webkit-mask-size: contain;
+        mask-size: contain;
+        -webkit-mask-repeat: no-repeat;
+        mask-repeat: no-repeat;
+        -webkit-mask-position: center;
+        mask-position: center;
+        background-color: currentColor;
+      }
+    </style>
+
+    <style>
+      .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+      [data-nav-key]{display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;border-radius:var(--radius-sm,4px);margin:2px 8px;transition:background .15s ease;text-decoration:none;border-left:2px solid transparent;background:transparent}
+      [data-nav-key]:hover{background:rgba(255,255,255,0.04)}
+      [data-nav-key][data-active="true"]{background:rgba(239,68,68,0.10);border-left-color:#EF4444}
+      [data-nav-key][data-active="true"] svg{stroke:#EF4444}
+      [data-nav-key][data-active="true"] span{color:#EF4444;font-weight:500}
+      .screener-select,.screener-input-sm{height:32px;background:var(--surface-bg-input);border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text-primary);font-size:var(--font-size-sm);padding:0 8px;outline:none;transition:border-color .12s ease;font-family:var(--font-family-body)}
+      .screener-select:focus,.screener-input-sm:focus{border-color:var(--border-focus)}
+      .screener-select{padding-right:24px;appearance:auto}
+      .screener-pe-input{width:56px;height:28px;background:var(--surface-bg-input);border:1px solid var(--border-default);border-radius:var(--radius-sm);color:var(--text-primary);font-size:var(--font-size-xs);padding:0 6px;text-align:center;outline:none;font-family:var(--font-family-mono);transition:border-color .12s ease}
+      .screener-pe-input:focus{border-color:var(--border-focus)}
+      .screener-table{width:100%;border-collapse:collapse;table-layout:fixed}
+      .screener-table thead{background:rgba(255,255,255,0.03)}
+      .screener-table th{font-size:var(--font-size-xs);font-weight:var(--font-weight-medium);color:var(--text-tertiary);text-transform:uppercase;padding:10px 12px;text-align:left;white-space:nowrap;letter-spacing:0.03em}
+      .screener-table td{padding:9px 12px;font-size:var(--font-size-sm);color:var(--text-secondary);border-top:1px solid var(--border-subtle);white-space:nowrap}
+      .screener-table tbody tr{transition:background .12s ease;cursor:pointer}
+      .screener-table tbody tr:hover{background:var(--surface-bg-card-hover)}
+      .screener-table tbody tr:nth-child(even){background:rgba(255,255,255,0.02)}
+      .screener-table tbody tr:nth-child(even):hover{background:var(--surface-bg-card-hover)}
+      .page-btn{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 8px;border-radius:var(--radius-sm);font-size:var(--font-size-sm);color:var(--text-tertiary);cursor:pointer;transition:background .12s ease,border-color .12s ease,opacity .12s ease;background:transparent;border:1px solid transparent}
+      .page-btn:hover:not(:disabled){background:rgba(255,255,255,0.04);color:var(--text-primary)}
+      .page-btn.active{background:var(--brand-primary-tint-10);color:var(--brand-primary);border-color:rgba(239,68,68,0.20)}
+      .page-btn:disabled{opacity:0.3;cursor:default}
+      @media(prefers-reduced-motion:reduce){.screener-table tbody tr,.page-btn,[data-nav-key]{transition-duration:.01ms}}
+    </style>
+</head>
+<body class="min-h-screen font-sans antialiased" style="margin:0;background:var(--surface-bg-base)">
+
+<div style="display:flex;height:100vh;overflow:hidden">
+
+  <!-- Left Sidebar -->
+  <aside style="width:200px;min-width:200px;height:100vh;background:var(--surface-bg-elevated, #111827);border-right:1px solid var(--border-default, rgba(255,255,255,0.08));display:flex;flex-direction:column;position:fixed;top:0;left:0;z-index:10">
+    <div style="display:flex;align-items:center;gap:10px;padding:20px 16px 16px">
+      <div style="width:24px;height:24px;min-width:24px;border-radius:4px;background:var(--brand-primary, #EF4444)"></div>
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <span style="font-family:var(--font-family-display);font-size:14px;font-weight:700;color:var(--text-primary);line-height:1.2">上海枫草交易部</span>
+      </div>
+    </div>
+    <nav style="flex:1;padding-top:4px">
+      <div data-nav-key="dashboard" data-dom-id="nav-dashboard">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><rect x="14" y="14" width="7" height="7" rx="1"></rect></svg>
+        <span style="font-size:var(--font-size-sm, 13px);color:var(--text-tertiary)">总览</span>
+      </div>
+      <div data-nav-key="screener" data-active="true" data-dom-id="nav-screener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+        <span style="font-size:var(--font-size-sm, 13px);color:var(--text-tertiary)">选股</span>
+      </div>
+      <div data-nav-key="analysis" data-dom-id="nav-analysis">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M7 16l4-8 4 4 4-10"></path></svg>
+        <span style="font-size:var(--font-size-sm, 13px);color:var(--text-tertiary)">分析</span>
+      </div>
+      <div data-nav-key="tracking" data-dom-id="nav-tracking">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+        <span style="font-size:var(--font-size-sm, 13px);color:var(--text-tertiary)">追踪</span>
+      </div>
+      <div data-nav-key="forecast" data-dom-id="nav-forecast">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+        <span style="font-size:var(--font-size-sm, 13px);color:var(--text-tertiary)">仓位</span>
+      </div>
+    </nav>
+    <div id="user-area" style="margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px 16px;border-top:1px solid var(--border-default, rgba(255,255,255,0.08))">
+      <div id="user-avatar" style="width:32px;height:32px;min-width:32px;border-radius:50%;background:var(--surface-bg-card, #1F2937);border:1px solid var(--border-default, rgba(255,255,255,0.08));display:flex;align-items:center;justify-content:center;color:var(--text-secondary);font-size:13px;font-weight:500">李</div>
+      <span id="user-name" style="flex:1;font-size:var(--font-size-sm, 13px);color:var(--text-secondary);line-height:1.3">李明</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="cursor:pointer"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l-.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+    </div>
+    <div style="padding:8px 16px;border-top:1px solid var(--border-default, rgba(255,255,255,0.08));display:flex;gap:6px;">
+      <button onclick="DataMigration.showExportModal()" style="flex:1;height:28px;border-radius:4px;border:1px solid var(--border-default,rgba(255,255,255,0.08));background:var(--surface-bg-card,#1A2035);color:var(--text-secondary,#94A3B8);font-size:11px;cursor:pointer;font-family:var(--font-family-body);transition:background .12s ease,color .12s ease;" onmouseover="this.style.background='rgba(255,255,255,0.06)';this.style.color='#F1F5F9'" onmouseout="this.style.background='var(--surface-bg-card,#1A2035)';this.style.color='var(--text-secondary,#94A3B8)'">导出数据</button>
+      <button onclick="DataMigration.showImportModal()" style="flex:1;height:28px;border-radius:4px;border:1px solid var(--border-default,rgba(255,255,255,0.08));background:var(--surface-bg-card,#1A2035);color:var(--text-secondary,#94A3B8);font-size:11px;cursor:pointer;font-family:var(--font-family-body);transition:background .12s ease,color .12s ease;" onmouseover="this.style.background='rgba(255,255,255,0.06)';this.style.color='#F1F5F9'" onmouseout="this.style.background='var(--surface-bg-card,#1A2035)';this.style.color='var(--text-secondary,#94A3B8)'">导入数据</button>
+    </div>
+  </aside>
+
+  <!-- Main Content Area -->
+  <main style="flex:1;margin-left:200px;overflow-y:auto;background:var(--surface-bg-base, #0A0E17);padding:24px;min-height:100vh">
+
+    <!-- Title -->
+    <h1 style="font-size:var(--font-size-xl, 20px);font-weight:700;color:var(--text-primary);margin:0 0 16px 0;line-height:1.3">智能选股</h1>
+
+    <!-- Filter Bar -->
+    <div class="filter-bar" style="display:flex;flex-wrap:wrap;gap:12px;margin:0 0 16px 0;padding:12px 16px;background:var(--surface-bg-card);border:1px solid var(--border-default);border-radius:var(--radius-md)">
+      <select class="screener-select" id="filter-sector" style="width:120px" aria-label="板块筛选">
+        <option value="">全部板块</option>
+      </select>
+      <select class="screener-select" id="filter-mcap" style="width:120px" aria-label="市值筛选">
+        <option value="">不限</option>
+        <option value="small">小盘&lt;200亿</option>
+        <option value="mid">中盘200-1000亿</option>
+        <option value="large">大盘&gt;1000亿</option>
+      </select>
+      <div style="display:flex;align-items:center;gap:4px">
+        <span style="color:var(--text-tertiary);font-size:var(--font-size-xs);white-space:nowrap">PE</span>
+        <input class="screener-pe-input" id="filter-pe-min" type="number" placeholder="最小" min="0" step="1" aria-label="PE最小值">
+        <span style="color:var(--text-tertiary);font-size:var(--font-size-xs)">-</span>
+        <input class="screener-pe-input" id="filter-pe-max" type="number" placeholder="最大" min="0" step="1" aria-label="PE最大值">
+      </div>
+      <select class="screener-select" id="filter-turnover" style="width:100px" aria-label="换手率筛选">
+        <option value="">不限</option>
+        <option value="low">&lt;1%</option>
+        <option value="mid">1%-3%</option>
+        <option value="high">&gt;3%</option>
+      </select>
+      <select class="screener-select" id="filter-change" style="width:100px" aria-label="涨跌幅筛选">
+        <option value="">不限</option>
+        <option value="up5">涨&gt;5%</option>
+        <option value="up3">涨&gt;3%</option>
+        <option value="down3">跌&gt;3%</option>
+        <option value="down5">跌&gt;5%</option>
+      </select>
+      <div style="position:relative;min-width:160px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-tertiary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);pointer-events:none"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input class="screener-input-sm" id="filter-search" type="text" placeholder="搜索代码或名称" style="width:100%;padding-left:28px" aria-label="搜索代码或名称">
+      </div>
+      <button id="btn-filter" style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 16px;background:var(--brand-primary);color:var(--text-inverse);font-size:var(--font-size-sm);font-weight:var(--font-weight-semibold);border-radius:var(--radius-md);border:none;cursor:pointer;white-space:nowrap;transition:opacity .12s ease" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">筛选</button>
+      <button id="btn-reset" style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;background:transparent;color:var(--text-secondary);font-size:var(--font-size-sm);border:1px solid var(--border-strong);border-radius:var(--radius-md);cursor:pointer;white-space:nowrap;transition:background .12s ease" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">重置</button>
+      <button id="btn-export" style="display:inline-flex;align-items:center;justify-content:center;height:32px;padding:0 12px;background:transparent;color:var(--text-secondary);font-size:var(--font-size-sm);border:1px solid var(--border-strong);border-radius:var(--radius-md);cursor:pointer;white-space:nowrap;transition:background .12s ease" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">导出</button>
+    </div>
+
+    <!-- Results Count -->
+    <div id="result-count" style="margin-bottom:8px;font-size:var(--font-size-sm);color:var(--text-tertiary)">显示 <span id="count-shown" style="color:var(--brand-primary);font-family:var(--font-family-mono);font-weight:var(--font-weight-medium)">0</span> / <span id="count-total" style="font-family:var(--font-family-mono);font-weight:var(--font-weight-medium)">0</span> 只</div>
+
+    <!-- Table -->
+    <div style="background:var(--surface-bg-card);border:1px solid var(--border-default);border-radius:var(--radius-md);overflow:hidden">
+      <div style="overflow-x:auto">
+        <table class="screener-table">
+          <thead>
+            <tr>
+              <th style="width:80px">代码</th>
+              <th style="width:80px">名称</th>
+              <th style="width:90px;text-align:right">现价</th>
+              <th style="width:90px;text-align:right">涨跌幅</th>
+              <th style="width:90px;text-align:right">涨跌额</th>
+              <th style="width:100px;text-align:right">成交量(万手)</th>
+              <th style="width:100px;text-align:right">成交额(亿)</th>
+              <th style="width:90px">行业</th>
+              <th style="width:60px;text-align:center">操作</th>
+            </tr>
+          </thead>
+          <tbody id="stock-tbody">
+            <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-tertiary)">加载中...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div id="pagination" style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-top:1px solid var(--border-subtle)">
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- Sidebar nav click handler -->
+<script>
+(function(){
+  var pageMap = {
+    'dashboard': 'dashboard.html',
+    'screener': 'stock-screener.html',
+    'analysis': 'stock-analysis.html',
+    'tracking': 'realtime-tracking.html',
+    'forecast': 'position-forecast.html'
+  };
+  document.addEventListener('click', function(e) {
+    var nav = e.target.closest('[data-nav-key]');
+    if (!nav) return;
+    var key = nav.getAttribute('data-nav-key');
+    var target = pageMap[key];
+    if (target) window.location.href = target;
+  });
+})();
+</script>
+
+<!-- User area name editing -->
+<script>
+(function(){
+  var area = document.getElementById('user-area');
+  var nameEl = document.getElementById('user-name');
+  var avatarEl = document.getElementById('user-avatar');
+  if (!area || !nameEl) return;
+  function loadName() {
+    try { var name = localStorage.getItem('tradeflow_username') || '李明'; } catch(e) { var name = '李明'; }
+    nameEl.textContent = name;
+    if (avatarEl) avatarEl.textContent = name.charAt(0);
+  }
+  loadName();
+  var editing = false;
+  area.addEventListener('click', function(e) {
+    if (editing) return;
+    if (e.target.closest('svg')) return;
+    editing = true;
+    var current = nameEl.textContent;
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.value = current;
+    input.style.cssText = 'height:24px;background:var(--surface-bg-input,#0D1321);border:1px solid var(--border-focus,rgba(239,68,68,0.50));border-radius:var(--radius-sm,4px);color:var(--text-primary);font-size:var(--font-size-sm,13px);padding:0 6px;outline:none;width:100%;font-family:var(--font-family-body);';
+    nameEl.style.display = 'none';
+    nameEl.parentNode.insertBefore(input, nameEl.nextSibling);
+    input.focus();
+    input.select();
+    function finish() {
+      var val = input.value.trim();
+      if (val) try { localStorage.setItem('tradeflow_username', val); } catch(e) {}
+      nameEl.textContent = val || current;
+      if (avatarEl) avatarEl.textContent = (val || current).charAt(0);
+      if (input.parentNode) input.parentNode.removeChild(input);
+      nameEl.style.display = '';
+      editing = false;
+    }
+    input.addEventListener('blur', finish);
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+      if (e.key === 'Escape') { input.value = current; input.blur(); }
+    });
+  });
+})();
+</script>
+
+<script src="data-migration.js"></script>
+<script src="market-simulator.js?v=8"></script>
+<script>
+(function() {
+  var sim = window.MarketSimulator;
+  if (!sim) return;
+  sim.start();
+
+  var PAGE_SIZE = 8;
+  var currentPage = 1;
+  var filteredStocks = [];
+  var totalStockCount = 0;
+
+  // Deterministic pseudo-random fundamentals based on stock code
+  function getFundamentals(code) {
+    var seed = parseInt(code) || 0;
+    var pe = 10 + (seed * 7 % 60);
+    var marketCap = 50 + (seed * 13 % 9500);
+    var turnover = 0.5 + (seed * 3 % 80) / 10;
+    return { pe: pe, marketCap: marketCap, turnover: turnover };
+  }
+
+  // Build full stock list from STOCK_MAP + live data (always fresh, no cache)
+  function getFullList() {
+    var MAP = sim.STOCK_MAP || {};
+    var list = [];
+    var codes = Object.keys(MAP);
+    totalStockCount = codes.length;
+    for (var i = 0; i < codes.length; i++) {
+      var code = codes[i];
+      var info = MAP[code] || {};
+      var live = sim.getStock(code);
+      var f = getFundamentals(code);
+      list.push({
+        code: code,
+        name: info.name || code,
+        current: live ? live.current : 0,
+        prevClose: live ? live.prevClose : 0,
+        changePct: live ? live.changePct : 0,
+        change: live ? live.change : 0,
+        volume: live ? (live.volume || 0) : 0,
+        amount: live ? (live.amount || 0) : 0,
+        sector: info.sector || '其他',
+        pe: f.pe,
+        marketCap: f.marketCap,
+        turnover: f.turnover
+      });
+    }
+    return list;
+  }
+
+  // Populate sector dropdown from STOCK_MAP
+  function populateSectorFilter() {
+    var sel = document.getElementById('filter-sector');
+    if (!sel || !sim.STOCK_MAP || Object.keys(sim.STOCK_MAP).length === 0) return;
+    // Clear existing options except "全部板块"
+    while (sel.options.length > 1) sel.remove(1);
+    var MAP = sim.STOCK_MAP || {};
+    var sectors = {};
+    for (var c in MAP) {
+      var sec = MAP[c].sector || '其他';
+      sectors[sec] = true;
+    }
+    var sorted = Object.keys(sectors).sort();
+    for (var i = 0; i < sorted.length; i++) {
+      var opt = document.createElement('option');
+      opt.value = sorted[i];
+      opt.textContent = sorted[i];
+      sel.appendChild(opt);
+    }
+  }
+
+  // Apply all filters
+  function applyFilters() {
+    var stocks = getFullList();
+
+    // Sector
+    var sector = document.getElementById('filter-sector').value;
+    if (sector) {
+      stocks = stocks.filter(function(s) { return s.sector === sector; });
+    }
+
+    // Market cap
+    var mcap = document.getElementById('filter-mcap').value;
+    if (mcap === 'small') stocks = stocks.filter(function(s) { return s.marketCap < 200; });
+    else if (mcap === 'mid') stocks = stocks.filter(function(s) { return s.marketCap >= 200 && s.marketCap <= 1000; });
+    else if (mcap === 'large') stocks = stocks.filter(function(s) { return s.marketCap > 1000; });
+
+    // PE range
+    var peMinVal = document.getElementById('filter-pe-min').value;
+    var peMaxVal = document.getElementById('filter-pe-max').value;
+    var peMin = peMinVal !== '' ? parseFloat(peMinVal) : NaN;
+    var peMax = peMaxVal !== '' ? parseFloat(peMaxVal) : NaN;
+    if (!isNaN(peMin)) stocks = stocks.filter(function(s) { return s.pe >= peMin; });
+    if (!isNaN(peMax)) stocks = stocks.filter(function(s) { return s.pe <= peMax; });
+
+    // Turnover
+    var turnover = document.getElementById('filter-turnover').value;
+    if (turnover === 'low') stocks = stocks.filter(function(s) { return s.turnover < 1; });
+    else if (turnover === 'mid') stocks = stocks.filter(function(s) { return s.turnover >= 1 && s.turnover <= 3; });
+    else if (turnover === 'high') stocks = stocks.filter(function(s) { return s.turnover > 3; });
+
+    // Change %
+    var change = document.getElementById('filter-change').value;
+    if (change === 'up5') stocks = stocks.filter(function(s) { return s.changePct > 5; });
+    else if (change === 'up3') stocks = stocks.filter(function(s) { return s.changePct > 3; });
+    else if (change === 'down3') stocks = stocks.filter(function(s) { return s.changePct < -3; });
+    else if (change === 'down5') stocks = stocks.filter(function(s) { return s.changePct < -5; });
+
+    // Search: prefix match on code OR contains match on name (case-insensitive)
+    var search = document.getElementById('filter-search').value.trim().toLowerCase();
+    if (search) {
+      stocks = stocks.filter(function(s) {
+        return s.code.toLowerCase().indexOf(search) === 0 ||
+               s.name.toLowerCase().indexOf(search) !== -1;
+      });
+    }
+
+    filteredStocks = stocks;
+    // Reset to page 1 on new filter
+    currentPage = 1;
+    renderTable();
+    renderPagination();
+    updateCount();
+  }
+
+  // Reset all filters
+  function resetFilters() {
+    document.getElementById('filter-sector').value = '';
+    document.getElementById('filter-mcap').value = '';
+    document.getElementById('filter-pe-min').value = '';
+    document.getElementById('filter-pe-max').value = '';
+    document.getElementById('filter-turnover').value = '';
+    document.getElementById('filter-change').value = '';
+    document.getElementById('filter-search').value = '';
+    applyFilters();
+  }
+
+  // Render the table for current page
+  function renderTable() {
+    var tbody = document.getElementById('stock-tbody');
+    if (!tbody) return;
+
+    var start = (currentPage - 1) * PAGE_SIZE;
+    var end = Math.min(start + PAGE_SIZE, filteredStocks.length);
+    var pageStocks = filteredStocks.slice(start, end);
+
+    if (pageStocks.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-tertiary)">无匹配结果</td></tr>';
+      return;
+    }
+
+    var html = '';
+    for (var i = 0; i < pageStocks.length; i++) {
+      var s = pageStocks[i];
+      var color = sim.color(s.changePct);
+      var signPct = s.changePct > 0 ? '+' : '';
+      var signAmt = s.change > 0 ? '+' : '';
+      var volWan = (s.volume / 10000).toFixed(1);
+      var amtYi = s.amount > 0 ? (s.amount / 100000000).toFixed(2) : '-';
+
+      html += '<tr data-code="' + s.code + '">' +
+        '<td style="font-family:var(--font-family-mono);color:var(--text-primary);font-size:var(--font-size-xs)">' + s.code + '</td>' +
+        '<td style="color:var(--text-primary);font-weight:var(--font-weight-medium)">' + s.name + '</td>' +
+        '<td style="text-align:right;font-family:var(--font-family-mono);color:' + color + '">' + s.current.toFixed(2) + '</td>' +
+        '<td style="text-align:right;font-family:var(--font-family-mono);color:' + color + '">' + signPct + s.changePct.toFixed(2) + '%</td>' +
+        '<td style="text-align:right;font-family:var(--font-family-mono);color:' + color + '">' + signAmt + s.change.toFixed(2) + '</td>' +
+        '<td style="text-align:right;font-family:var(--font-family-mono)">' + volWan + '</td>' +
+        '<td style="text-align:right;font-family:var(--font-family-mono)">' + amtYi + '</td>' +
+        '<td>' + s.sector + '</td>' +
+        '<td style="text-align:center"><button class="btn-analysis" data-code="' + s.code + '" style="background:transparent;border:none;color:var(--brand-primary);font-size:var(--font-size-sm);cursor:pointer;padding:2px 4px;white-space:nowrap;transition:opacity .12s ease" onmouseover="this.style.opacity=\'0.75\'" onmouseout="this.style.opacity=\'1\'">分析</button></td>' +
+        '</tr>';
+    }
+    tbody.innerHTML = html;
+  }
+
+  // Render pagination controls
+  function renderPagination() {
+    var container = document.getElementById('pagination');
+    if (!container) return;
+
+    var totalPages = Math.ceil(filteredStocks.length / PAGE_SIZE);
+    if (totalPages < 1) totalPages = 1;
+
+    var html = '';
+
+    // Left side: result info
+    html += '<span style="font-size:var(--font-size-sm);color:var(--text-tertiary)">共 ' + filteredStocks.length + ' 条结果</span>';
+
+    // Right side: page buttons
+    html += '<div style="display:flex;align-items:center;gap:4px">';
+
+    // Previous button
+    var prevDisabled = currentPage <= 1 ? ' disabled' : '';
+    html += '<button class="page-btn" data-page="prev"' + prevDisabled + ' aria-label="上一页">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg></button>';
+
+    // Page number buttons
+    for (var p = 1; p <= totalPages; p++) {
+      var activeClass = p === currentPage ? ' active' : '';
+      html += '<button class="page-btn' + activeClass + '" data-page="' + p + '">' + p + '</button>';
+    }
+
+    // Next button
+    var nextDisabled = currentPage >= totalPages ? ' disabled' : '';
+    html += '<button class="page-btn" data-page="next"' + nextDisabled + ' aria-label="下一页">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg></button>';
+
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  // Update result count display
+  function updateCount() {
+    var shownEl = document.getElementById('count-shown');
+    var totalEl = document.getElementById('count-total');
+    if (shownEl) shownEl.textContent = filteredStocks.length;
+    if (totalEl) totalEl.textContent = totalStockCount;
+  }
+
+  // Export current filtered results to CSV
+  function exportCSV() {
+    if (filteredStocks.length === 0) return;
+
+    var header = '代码,名称,现价,涨跌幅,涨跌额,成交量(万手),成交额(亿),行业\n';
+    var rows = '';
+    for (var i = 0; i < filteredStocks.length; i++) {
+      var s = filteredStocks[i];
+      var signPct = s.changePct > 0 ? '+' : '';
+      var signAmt = s.change > 0 ? '+' : '';
+      var volWan = (s.volume / 10000).toFixed(1);
+      var amtYi = s.amount > 0 ? (s.amount / 100000000).toFixed(2) : '0';
+      rows += s.code + ',' + s.name + ',' + s.current.toFixed(2) + ',' +
+        signPct + s.changePct.toFixed(2) + '%,' + signAmt + s.change.toFixed(2) + ',' +
+        volWan + ',' + amtYi + ',' + s.sector + '\n';
+    }
+
+    var csvContent = '\uFEFF' + header + rows; // BOM for Excel Chinese support
+    var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = '选股结果_' + new Date().toISOString().slice(0, 10) + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // Navigate to analysis page
+  function goToAnalysis(code) {
+    if (code) window.location.href = 'stock-analysis.html?code=' + code;
+  }
+
+  // === Event Listeners ===
+
+  // Filter button
+  document.getElementById('btn-filter').addEventListener('click', applyFilters);
+
+  // Reset button
+  document.getElementById('btn-reset').addEventListener('click', resetFilters);
+
+  // Export button
+  document.getElementById('btn-export').addEventListener('click', exportCSV);
+
+  // Search on Enter
+  document.getElementById('filter-search').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') { e.preventDefault(); applyFilters(); }
+  });
+
+  // Pagination clicks (delegated)
+  document.getElementById('pagination').addEventListener('click', function(e) {
+    var btn = e.target.closest('.page-btn');
+    if (!btn || btn.disabled) return;
+    var page = btn.getAttribute('data-page');
+    var totalPages = Math.ceil(filteredStocks.length / PAGE_SIZE);
+    if (page === 'prev') {
+      if (currentPage > 1) currentPage--;
+    } else if (page === 'next') {
+      if (currentPage < totalPages) currentPage++;
+    } else {
+      var num = parseInt(page);
+      if (!isNaN(num)) currentPage = num;
+    }
+    renderTable();
+    renderPagination();
+  });
+
+  // Analysis button clicks (delegated)
+  document.getElementById('stock-tbody').addEventListener('click', function(e) {
+    // If clicking the analysis button
+    var analysisBtn = e.target.closest('.btn-analysis');
+    if (analysisBtn) {
+      e.stopPropagation();
+      goToAnalysis(analysisBtn.getAttribute('data-code'));
+      return;
+    }
+    // If clicking anything else in the row (not a button/input), navigate to analysis
+    if (e.target.closest('button') || e.target.closest('input')) return;
+    var row = e.target.closest('tr[data-code]');
+    if (row) {
+      goToAnalysis(row.getAttribute('data-code'));
+    }
+  });
+
+  // === Initial Load ===
+  setTimeout(function() {
+    populateSectorFilter();
+    applyFilters();
+  }, 1500);
+
+  // Live update every tick from simulator
+  sim.onUpdate(function() {
+    applyFilters();
+  });
+
+  // Expose functions globally for onclick if needed
+  window.applyFilters = applyFilters;
+  window.resetFilters = resetFilters;
+  window.exportCSV = exportCSV;
+})();
+</script>
+</body>
+</html>
