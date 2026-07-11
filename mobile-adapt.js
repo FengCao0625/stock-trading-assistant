@@ -38,11 +38,60 @@
     nav.appendChild(a);
   });
 
+  // "More" button with popup menu
+  var moreBtn = document.createElement('div');
+  moreBtn.className = 'mob-nav-item';
+  moreBtn.id = 'mob-more-btn';
+  moreBtn.innerHTML =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">' +
+      '<circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle>' +
+    '</svg>' +
+    '<span class="mob-nav-label">更多</span>';
+  moreBtn.addEventListener('click', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleMoreMenu();
+  });
+  nav.appendChild(moreBtn);
+
   document.body.appendChild(nav);
+
+  // More menu popup
+  var moreMenu = null;
+
+  function toggleMoreMenu() {
+    if (moreMenu) {
+      moreMenu.remove();
+      moreMenu = null;
+      return;
+    }
+    moreMenu = document.createElement('div');
+    moreMenu.id = 'mob-more-menu';
+    moreMenu.style.cssText = 'position:fixed;bottom:68px;right:12px;background:#1A2035;border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:6px 0;z-index:200;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,0.4);';
+    moreMenu.innerHTML =
+      '<div class="mob-menu-item" onclick="DataMigration.showSyncModal();document.getElementById(\'mob-more-menu\')?.remove();">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>' +
+        '<span>云端同步</span></div>' +
+      '<div class="mob-menu-item" onclick="DataMigration.showExportModal();document.getElementById(\'mob-more-menu\')?.remove();">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>' +
+        '<span>导出数据</span></div>' +
+      '<div class="mob-menu-item" onclick="DataMigration.showImportModal();document.getElementById(\'mob-more-menu\')?.remove();">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
+        '<span>导入数据</span></div>';
+    document.body.appendChild(moreMenu);
+  }
+
+  // Close more menu on tap outside
+  document.addEventListener('click', function(e) {
+    if (moreMenu && !moreMenu.contains(e.target) && e.target !== moreBtn) {
+      moreMenu.remove();
+      moreMenu = null;
+    }
+  });
 
   // Prevent bounce scroll on iOS
   document.addEventListener('touchmove', function(e) {
-    if (e.target.closest('.mobile-bottom-nav')) {
+    if (e.target.closest('.mobile-bottom-nav') || e.target.closest('#mob-more-menu')) {
       e.preventDefault();
     }
   }, { passive: false });
