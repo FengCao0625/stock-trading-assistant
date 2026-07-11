@@ -1,6 +1,6 @@
 /**
  * 数据导入/导出 + 云端同步工具
- * 使用 jsonblob.com 免费存储（无需 API key）
+ * 使用 npoint.io 免费存储（国内可访问，无需 API key）
  * 允许在不同设备/浏览器之间自动同步 localStorage 数据
  */
 (function() {
@@ -15,8 +15,8 @@
     'tradeflow_alerts'
   ];
 
-  var SYNC_BLOB_KEY = 'tradeflow_sync_blob_id';
-  var SYNC_API = 'https://jsonblob.com/api/jsonBlob';
+  var SYNC_BLOB_KEY = 'tradeflow_sync_id';
+  var SYNC_API = 'https://api.npoint.io/v2';
 
   function _getSyncId() {
     return localStorage.getItem(SYNC_BLOB_KEY);
@@ -79,37 +79,41 @@
 
     syncToCloud: function() {
       return new Promise(function(resolve, reject) {
-        var blobId = _getSyncId();
+        var docId = _getSyncId();
         var data = _collectData();
         var payload = JSON.stringify(data);
 
+        if (!docId) {
+          // First time: create
+          DataMigration._createBlob(data).then(resolve).catch(reject);
+          return;
+        }
+
         var xhr = new XMLHttpRequest();
-        xhr.open('PUT', SYNC_API + '/' + blobId, true);
+        xhr.open('PUT', SYNC_API + '/' + docId, true);
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.onload = function() {
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve({ success: true, count: Object.keys(data).length - 1 });
-          } else if (xhr.status === 404) {
-            // blob was deleted, create new
-            DataMigration._createBlob(data).then(resolve).catch(reject);
           } else {
-            reject(new Error('HTTP ' + xhr.status));
+            // ID might be stale, create new
+            DataMigration._createBlob(data).then(resolve).catch(reject);
           }
         };
-        xhr.onerror = function() { reject(new Error('网络错误')); };
+        xhr.onerror = function() { reject(new Error('网络错误，请检查网络连接')); };
         xhr.send(payload);
       });
     },
 
     syncFromCloud: function() {
       return new Promise(function(resolve, reject) {
-        var blobId = _getSyncId();
-        if (!blobId) {
+        var docId = _getSyncId();
+        if (!docId) {
           reject(new Error('尚未创建同步空间，请先在任一设备上传数据'));
           return;
         }
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', SYNC_API + '/' + blobId, true);
+        xhr.open('GET', SYNC_API + '/' + docId, true);
         xhr.setRequestHeader('Accept', 'application/json');
         xhr.onload = function() {
           if (xhr.status >= 200 && xhr.status < 300) {
@@ -121,10 +125,10 @@
               reject(new Error('数据解析失败'));
             }
           } else {
-            reject(new Error('HTTP ' + xhr.status));
+            reject(new Error('同步空间不存在或已过期 HTTP ' + xhr.status));
           }
         };
-        xhr.onerror = function() { reject(new Error('网络错误')); };
+        xhr.onerror = function() { reject(new Error('网络错误，请检查网络连接')); };
         xhr.send();
       });
     },
@@ -136,17 +140,24 @@
         xhr.setRequestHeader('Content-Type', 'application/json');
         xhr.onload = function() {
           if (xhr.status >= 200 && xhr.status < 300) {
-            var loc = xhr.getResponseHeader('Location') || xhr.getResponseHeader('location');
-            if (loc) {
-              var id = loc.split('/').pop();
-              _setSyncId(id);
+            try {
+              var resp = JSON.parse(xhr.responseText);
+              // npoint returns {message:"Doc added",id:"xxxxx",...}
+              if (resp && resp.id) {
+                _setSyncId(resp.id);
+              }
+              resolve({ success: true, count: Object.keys(data).length - 1 });
+            } catch (e) {
+              // Fallback: try to get id from response text
+              var match = (xhr.responseText || '').match(/"id"\s*:\s*"([^"]+)"/);
+              if (match) _setSyncId(match[1]);
+              resolve({ success: true, count: Object.keys(data).length - 1 });
             }
-            resolve({ success: true, count: Object.keys(data).length - 1 });
           } else {
             reject(new Error('创建失败 HTTP ' + xhr.status));
           }
         };
-        xhr.onerror = function() { reject(new Error('网络错误')); };
+        xhr.onerror = function() { reject(new Error('网络错误，请检查网络连接')); };
         xhr.send(JSON.stringify(data));
       });
     },
