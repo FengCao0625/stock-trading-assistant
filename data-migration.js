@@ -1,7 +1,7 @@
 /**
  * 数据导入/导出 + 云端同步工具
- * 使用 npoint.io 免费存储（国内可访问，无需 API key）
- * 允许在不同设备/浏览器之间自动同步 localStorage 数据
+ * 同步方案：生成包含数据的链接，在另一设备打开即自动导入
+ * 无需后端、无需 API、无需注册
  */
 (function() {
   'use strict';
@@ -14,17 +14,6 @@
     'tradeflow_watchlist',
     'tradeflow_alerts'
   ];
-
-  var SYNC_BLOB_KEY = 'tradeflow_sync_id';
-  var SYNC_API = 'https://api.npoint.io';
-
-  function _getSyncId() {
-    return localStorage.getItem(SYNC_BLOB_KEY);
-  }
-
-  function _setSyncId(id) {
-    localStorage.setItem(SYNC_BLOB_KEY, id);
-  }
 
   function _collectData() {
     var data = {};
@@ -39,7 +28,6 @@
         if (v !== null) data[k] = v;
       }
     }
-    data._ts = Date.now();
     return data;
   }
 
@@ -54,7 +42,9 @@
     return count;
   }
 
-  var _toastBottom = '100px';
+  function _toastBottom() {
+    return window.innerWidth < 768 ? '100px' : '40px';
+  }
 
   window.DataMigration = {
 
@@ -62,7 +52,6 @@
 
     exportData: function() {
       var d = _collectData();
-      delete d._ts;
       return JSON.stringify(d, null, 2);
     },
 
@@ -75,101 +64,36 @@
       }
     },
 
-    /* ========== Cloud Sync ========== */
+    /* ========== Link-based Sync ========== */
 
-    syncToCloud: function() {
-      return new Promise(function(resolve, reject) {
-        var docId = _getSyncId();
-        var data = _collectData();
-        var payload = JSON.stringify(data);
+    generateSyncLink: function() {
+      var data = _collectData();
+      var json = JSON.stringify(data);
+      var encoded = btoa(unescape(encodeURIComponent(json)));
+      // Split into chunks to keep URL reasonable (GitHub Pages has limits)
+      // Use current page as base
+      var base = window.location.href.split('#')[0].split('?')[0];
+      return base + '#sync=' + encoded;
+    },
 
-        if (!docId) {
-          // First time: create
-          DataMigration._createBlob(data).then(resolve).catch(reject);
-          return;
+    importFromSyncLink: function() {
+      var hash = window.location.hash;
+      if (hash.indexOf('#sync=') === 0) {
+        var encoded = hash.substring(6);
+        try {
+          var json = decodeURIComponent(escape(atob(encoded)));
+          var data = JSON.parse(json);
+          if (Object.keys(data).length > 0) {
+            _applyData(data);
+            // Clean URL
+            history.replaceState(null, '', window.location.href.split('#')[0]);
+            return data;
+          }
+        } catch (e) {
+          console.warn('Sync link parse error:', e);
         }
-
-        var xhr = new XMLHttpRequest();
-        xhr.open('PUT', SYNC_API + '/' + docId, true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.onload = function() {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve({ success: true, count: Object.keys(data).length - 1 });
-          } else {
-            // ID might be stale, create new
-            DataMigration._createBlob(data).then(resolve).catch(reject);
-          }
-        };
-        xhr.onerror = function() { reject(new Error('网络错误，请检查网络连接')); };
-        xhr.send(payload);
-      });
-    },
-
-    syncFromCloud: function() {
-      return new Promise(function(resolve, reject) {
-        var docId = _getSyncId();
-        if (!docId) {
-          reject(new Error('尚未创建同步空间，请先在任一设备上传数据'));
-          return;
-        }
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', SYNC_API + '/' + docId, true);
-        xhr.setRequestHeader('Accept', 'application/json');
-        xhr.onload = function() {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              var data = JSON.parse(xhr.responseText);
-              var count = _applyData(data);
-              resolve({ success: true, count: count, remoteTs: data._ts });
-            } catch (e) {
-              reject(new Error('数据解析失败'));
-            }
-          } else {
-            reject(new Error('同步空间不存在或已过期 HTTP ' + xhr.status));
-          }
-        };
-        xhr.onerror = function() { reject(new Error('网络错误，请检查网络连接')); };
-        xhr.send();
-      });
-    },
-
-    _createBlob: function(data) {
-      return new Promise(function(resolve, reject) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', SYNC_API, true);
-        xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.onload = function() {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-              var resp = JSON.parse(xhr.responseText);
-              // npoint returns {message:"Doc added",id:"xxxxx",...}
-              if (resp && resp.id) {
-                _setSyncId(resp.id);
-              }
-              resolve({ success: true, count: Object.keys(data).length - 1 });
-            } catch (e) {
-              // Fallback: try to get id from response text
-              var match = (xhr.responseText || '').match(/"id"\s*:\s*"([^"]+)"/);
-              if (match) _setSyncId(match[1]);
-              resolve({ success: true, count: Object.keys(data).length - 1 });
-            }
-          } else {
-            reject(new Error('创建失败 HTTP ' + xhr.status));
-          }
-        };
-        xhr.onerror = function() { reject(new Error('网络错误，请检查网络连接')); };
-        xhr.send(JSON.stringify(data));
-      });
-    },
-
-    initSync: function() {
-      var blobId = _getSyncId();
-      if (blobId) {
-        return Promise.resolve({ exists: true, blobId: blobId });
       }
-      return this._createBlob(_collectData()).then(function() {
-        return { exists: false, blobId: _getSyncId() };
-      });
+      return null;
     },
 
     /* ========== Modals ========== */
@@ -226,75 +150,103 @@
 
     showSyncModal: function() {
       this._closeModal();
-      var hasId = !!_getSyncId();
       var el = document.createElement('div');
       el.id = 'dm-modal';
       el.style.cssText = 'position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;';
       el.innerHTML =
         '<div style="position:absolute;inset:0;background:rgba(0,0,0,0.6);" onclick="DataMigration._closeModal()"></div>' +
-        '<div style="position:relative;background:#111827;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;width:90%;max-width:380px;z-index:1;">' +
+        '<div style="position:relative;background:#111827;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:20px;width:90%;max-width:420px;z-index:1;">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">' +
-            '<span style="font-size:16px;font-weight:600;color:#F1F5F9;">云端同步</span>' +
+            '<span style="font-size:16px;font-weight:600;color:#F1F5F9;">数据同步</span>' +
             '<button onclick="DataMigration._closeModal()" style="background:none;border:none;color:#64748B;cursor:pointer;font-size:20px;line-height:1;">&times;</button>' +
           '</div>' +
-          '<p style="font-size:12px;color:#94A3B8;margin:0 0 14px;">数据保存在云端，手机和电脑自动共享。首次使用需先上传，之后在任何设备点"拉取"即可同步。</p>' +
-          '<div id="dm-sync-status" style="font-size:12px;min-height:20px;margin-bottom:10px;"></div>' +
-          '<div style="display:flex;flex-direction:column;gap:8px;">' +
-            '<button id="dm-sync-upload" onclick="DataMigration._doSyncUpload()" style="width:100%;padding:12px;border-radius:6px;border:none;cursor:pointer;font-size:14px;font-weight:500;background:#EF4444;color:#fff;">上传到云端</button>' +
-            '<button id="dm-sync-download" onclick="DataMigration._doSyncDownload()" style="width:100%;padding:12px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);cursor:pointer;font-size:14px;font-weight:500;background:transparent;color:#F87171;">从云端拉取</button>' +
+
+          // Step 1: Generate link
+          '<div style="margin-bottom:14px;">' +
+            '<div style="font-size:13px;font-weight:500;color:#F1F5F9;margin-bottom:6px;">第一步：生成同步链接</div>' +
+            '<p style="font-size:11px;color:#94A3B8;margin:0 0 8px;">点击下方按钮生成一个包含你所有数据的链接，复制后发送到另一台设备（微信/QQ/邮件均可）。</p>' +
+            '<button onclick="DataMigration._genAndCopyLink()" style="width:100%;padding:10px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:500;background:#EF4444;color:#fff;margin-bottom:6px;">生成同步链接并复制</button>' +
+            '<div id="dm-sync-link-status" style="font-size:11px;min-height:16px;margin-top:4px;"></div>' +
           '</div>' +
-          (hasId ? '<p style="font-size:10px;color:#64748B;margin:10px 0 0;text-align:center;">同步ID: ' + _getSyncId().substring(0,8) + '...</p>' : '') +
+
+          '<div style="height:1px;background:rgba(255,255,255,0.06);margin:14px 0;"></div>' +
+
+          // Step 2: Import from link
+          '<div>' +
+            '<div style="font-size:13px;font-weight:500;color:#F1F5F9;margin-bottom:6px;">第二步：在另一设备打开链接</div>' +
+            '<p style="font-size:11px;color:#94A3B8;margin:0 0 8px;">在手机/另一台电脑上粘贴并打开链接，数据会自动导入。也可以手动粘贴链接：</p>' +
+            '<input id="dm-sync-link-input" type="text" placeholder="粘贴同步链接..." style="width:100%;height:36px;background:#0D1321;border:1px solid rgba(255,255,255,0.08);border-radius:6px;color:#F1F5F9;font-size:12px;padding:0 10px;outline:none;margin-bottom:8px;box-sizing:border-box;" />' +
+            '<button onclick="DataMigration._importFromLink()" style="width:100%;padding:10px;border-radius:6px;border:1px solid rgba(239,68,68,0.3);cursor:pointer;font-size:13px;font-weight:500;background:transparent;color:#F87171;">从链接导入</button>' +
+            '<div id="dm-sync-import-status" style="font-size:11px;min-height:16px;margin-top:4px;"></div>' +
+          '</div>' +
         '</div>';
       document.body.appendChild(el);
     },
 
     /* ========== Internal ========== */
 
-    _doSyncUpload: function() {
-      var status = document.getElementById('dm-sync-status');
-      var btn = document.getElementById('dm-sync-upload');
-      if (!status || !btn) return;
-      btn.disabled = true;
-      btn.style.opacity = '0.5';
-      status.style.color = '#94A3B8';
-      status.textContent = '正在上传...';
+    _genAndCopyLink: function() {
+      var status = document.getElementById('dm-sync-link-status');
+      if (!status) return;
 
-      DataMigration.syncToCloud().then(function(r) {
-        status.style.color = '#4ADE80';
-        status.textContent = '上传成功，已同步 ' + r.count + ' 项数据';
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        // refresh modal to show sync ID
-        setTimeout(function() { DataMigration.showSyncModal(); }, 1200);
-      }).catch(function(e) {
-        status.style.color = '#EF4444';
-        status.textContent = '上传失败: ' + e.message;
-        btn.disabled = false;
-        btn.style.opacity = '1';
-      });
+      var data = _collectData();
+      if (Object.keys(data).length === 0) {
+        status.style.color = '#F59E0B';
+        status.textContent = '当前无数据可同步';
+        return;
+      }
+
+      var link = this.generateSyncLink();
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(link).then(function() {
+          status.style.color = '#4ADE80';
+          status.textContent = '链接已复制！发送到另一台设备打开即可同步。';
+        }).catch(function() {
+          DataMigration._showLinkFallback(link, status);
+        });
+      } else {
+        this._showLinkFallback(link, status);
+      }
     },
 
-    _doSyncDownload: function() {
-      var status = document.getElementById('dm-sync-status');
-      var btn = document.getElementById('dm-sync-download');
-      if (!status || !btn) return;
-      btn.disabled = true;
-      btn.style.opacity = '0.5';
+    _showLinkFallback: function(link, status) {
+      // Show the link in a textarea for manual copy
       status.style.color = '#94A3B8';
-      status.textContent = '正在拉取...';
+      status.innerHTML = '<textarea id="dm-sync-link-area" style="width:100%;height:60px;background:#0D1321;border:1px solid rgba(255,255,255,0.08);border-radius:4px;color:#F1F5F9;font-size:10px;font-family:monospace;padding:6px;resize:vertical;outline:none;margin-top:4px;">' + link + '</textarea><span style="color:#94A3B8;">请手动复制上方链接</span>';
+    },
 
-      DataMigration.syncFromCloud().then(function(r) {
-        status.style.color = '#4ADE80';
-        status.textContent = '拉取成功，已导入 ' + r.count + ' 项数据，页面即将刷新...';
-        btn.disabled = false;
-        btn.style.opacity = '1';
-        setTimeout(function() { location.reload(); }, 1500);
-      }).catch(function(e) {
+    _importFromLink: function() {
+      var input = document.getElementById('dm-sync-link-input');
+      var status = document.getElementById('dm-sync-import-status');
+      if (!input || !status) return;
+
+      var url = input.value.trim();
+      if (!url) {
+        status.style.color = '#F59E0B';
+        status.textContent = '请粘贴同步链接';
+        return;
+      }
+
+      // Extract #sync= part
+      var match = url.match(/#sync=([A-Za-z0-9+/=]+)/);
+      if (!match) {
         status.style.color = '#EF4444';
-        status.textContent = '拉取失败: ' + e.message;
-        btn.disabled = false;
-        btn.style.opacity = '1';
-      });
+        status.textContent = '无效的同步链接';
+        return;
+      }
+
+      try {
+        var json = decodeURIComponent(escape(atob(match[1])));
+        var data = JSON.parse(json);
+        var count = _applyData(data);
+        status.style.color = '#4ADE80';
+        status.textContent = '成功导入 ' + count + ' 项数据，页面即将刷新...';
+        setTimeout(function() { location.reload(); }, 1500);
+      } catch (e) {
+        status.style.color = '#EF4444';
+        status.textContent = '导入失败：' + e.message;
+      }
     },
 
     _copyExport: function() {
@@ -335,7 +287,7 @@
     _showToast: function(text) {
       var t = document.createElement('div');
       t.textContent = text;
-      t.style.cssText = 'position:fixed;bottom:' + _toastBottom + ';left:50%;transform:translateX(-50%);background:#1E2642;color:#F1F5F9;padding:8px 20px;border-radius:8px;font-size:13px;z-index:3000;border:1px solid rgba(255,255,255,0.1);white-space:nowrap;';
+      t.style.cssText = 'position:fixed;bottom:' + _toastBottom() + ';left:50%;transform:translateX(-50%);background:#1E2642;color:#F1F5F9;padding:8px 20px;border-radius:8px;font-size:13px;z-index:3000;border:1px solid rgba(255,255,255,0.1);white-space:nowrap;';
       document.body.appendChild(t);
       setTimeout(function() { t.remove(); }, 2000);
     },
@@ -347,4 +299,12 @@
 
     closeModal: function() { this._closeModal(); }
   };
+
+  /* ========== Auto-import from sync link on page load ========== */
+  var autoData = DataMigration.importFromSyncLink();
+  if (autoData && Object.keys(autoData).length > 0) {
+    setTimeout(function() {
+      DataMigration._showToast('已从同步链接导入 ' + Object.keys(autoData).length + ' 项数据');
+    }, 500);
+  }
 })();
