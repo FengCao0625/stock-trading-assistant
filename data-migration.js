@@ -16,7 +16,7 @@
   ];
 
   var SYNC_BLOB_KEY = 'tradeflow_sync_id';
-  var SYNC_API = 'https://api.npoint.io/v2';
+  var SYNC_API = 'https://api.npoint.io';
 
   function _getSyncId() {
     return localStorage.getItem(SYNC_BLOB_KEY);
