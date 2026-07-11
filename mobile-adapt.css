@@ -1,0 +1,377 @@
+/* ========== Mobile Adaptation for 上海枫草交易部 ========== */
+/* Injected via <link> — overrides desktop layout for screens < 768px */
+
+@media screen and (max-width: 767px) {
+
+  /* === Hide desktop sidebar, show bottom nav === */
+  aside {
+    display: none !important;
+  }
+
+  /* Bottom tab bar */
+  .mobile-bottom-nav {
+    display: flex !important;
+  }
+
+  /* Main content: remove left margin, adjust padding, add bottom padding for nav */
+  main,
+  main.page-main {
+    margin-left: 0 !important;
+    padding: 12px 10px 80px 10px !important;
+    min-height: 100vh !important;
+    height: auto !important;
+  }
+
+  /* === Typography scale-up for mobile === */
+  :root {
+    --font-size-xs: 12px;
+    --font-size-sm: 13px;
+    --font-size-base: 14px;
+    --font-size-md: 15px;
+    --font-size-lg: 17px;
+    --font-size-xl: 22px;
+    --font-size-2xl: 26px;
+    --font-size-3xl: 36px;
+  }
+
+  /* === Page titles === */
+  h1 {
+    font-size: var(--font-size-xl) !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* === KPI Cards — responsive grid === */
+  /* dashboard: 4-col → 2-col, 3-col → 2-col, split rows → stack */
+  .dash-row-1,
+  .dash-row-1b {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+  }
+
+  .dash-row-2,
+  .dash-row-3 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .dash-grid {
+    gap: 8px !important;
+  }
+
+  /* position-forecast: 4-col → 2-col */
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+
+  /* === KPI card compact === */
+  .kpi-card {
+    padding: 10px 12px !important;
+  }
+  .kpi-value {
+    font-size: var(--font-size-lg) !important;
+  }
+
+  /* === Tables — horizontal scroll wrapper === */
+  .holdings-table,
+  .screener-table,
+  #order-book,
+  .tick-table,
+  .ob-table {
+    font-size: var(--font-size-xs) !important;
+    min-width: 500px;
+  }
+
+  /* Make parent card scrollable */
+  .card:has(.holdings-table),
+  .card:has(.screener-table),
+  .card:has(#order-book) {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Dashboard holdings section scrollable */
+  .card-section:has(.holdings-table) {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    max-height: none !important;
+  }
+
+  /* === Modals — full width on mobile === */
+  .trade-modal-box,
+  .modal-content {
+    width: calc(100% - 32px) !important;
+    max-width: none !important;
+    min-width: 0 !important;
+    left: 16px !important;
+    right: 16px !important;
+    transform: translate(0, -50%) !important;
+    top: 50% !important;
+    padding: 20px 16px !important;
+    box-sizing: border-box;
+  }
+
+  #holding-trade-modal {
+    width: calc(100% - 32px) !important;
+  }
+
+  /* Data migration modal */
+  #dm-modal > div:last-child {
+    width: calc(100% - 32px) !important;
+    max-width: none !important;
+  }
+
+  /* === stock-analysis specific === */
+  .stock-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 12px 14px !important;
+  }
+
+  .stock-header-right {
+    align-self: flex-start !important;
+  }
+
+  .stock-header-right .price-value {
+    font-size: var(--font-size-2xl) !important;
+  }
+
+  #price-chart {
+    height: 240px !important;
+  }
+
+  #volume-chart {
+    height: 60px !important;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    padding: 12px 14px !important;
+  }
+
+  .chart-modes {
+    margin-bottom: 12px !important;
+  }
+
+  .chart-modes button {
+    padding: 0 14px !important;
+    font-size: var(--font-size-sm) !important;
+  }
+
+  /* === stock-screener specific === */
+  .filter-bar {
+    padding: 10px 12px !important;
+    gap: 8px !important;
+  }
+
+  .screener-select {
+    width: 100% !important;
+  }
+
+  .screener-input-sm {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  /* === realtime-tracking specific === */
+  .search-bar {
+    max-width: none !important;
+  }
+
+  .two-col {
+    grid-template-columns: 1fr !important;
+  }
+
+  #intraday-chart {
+    height: 220px !important;
+  }
+
+  .price-display .price-value {
+    font-size: var(--font-size-2xl) !important;
+  }
+
+  /* === position-forecast specific === */
+  .scenario-cards {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* Inline grid layout for allocation + forecast */
+  [style*="grid-template-columns:1fr 2fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  #allocation-chart {
+    height: 180px !important;
+  }
+
+  /* === Dashboard chart container === */
+  .chart-container {
+    height: 220px !important;
+  }
+
+  /* === Cards === */
+  .card {
+    padding: 12px !important;
+  }
+
+  .card-section {
+    max-height: none !important;
+  }
+
+  /* === Add holding form === */
+  .add-holding-form {
+    padding: 12px !important;
+  }
+
+  .add-form-input {
+    font-size: var(--font-size-base) !important;
+  }
+
+  /* === Pagination === */
+  .page-btn {
+    min-width: 36px !important;
+    height: 36px !important;
+    font-size: var(--font-size-sm) !important;
+  }
+
+  /* === Toast === */
+  #toast-container {
+    top: 12px !important;
+    right: 12px !important;
+    left: 12px !important;
+  }
+
+  /* === Suggestion cards === */
+  .suggestion-card {
+    padding: 10px 12px !important;
+  }
+
+  /* === Holdings actions — bigger touch targets === */
+  .holding-action {
+    height: 28px !important;
+    padding: 0 14px !important;
+    font-size: var(--font-size-sm) !important;
+  }
+
+  .holding-delete {
+    width: 28px !important;
+    height: 28px !important;
+  }
+
+  /* === Tab pills / toggle groups === */
+  .tab-pill,
+  .toggle-group button {
+    height: 32px !important;
+    font-size: var(--font-size-sm) !important;
+    padding: 0 12px !important;
+  }
+
+  /* === Watchlist / alert items === */
+  .watchlist-item,
+  .alert-item {
+    padding: 10px 12px !important;
+  }
+
+  /* === Order book table (realtime-tracking) === */
+  #order-book {
+    font-size: var(--font-size-xs) !important;
+  }
+
+  /* === Make all interactive elements have min touch target 44px where possible === */
+  [data-nav-key] {
+    min-height: 44px;
+  }
+
+  input[type="number"],
+  input[type="text"],
+  select {
+    min-height: 40px;
+    font-size: var(--font-size-base) !important;
+  }
+
+  /* === Desktop-only header buttons === */
+  .dash-header-actions {
+    gap: 8px !important;
+  }
+
+  /* === Trade rows in dashboard === */
+  .trade-row {
+    padding: 8px 0 !important;
+    font-size: var(--font-size-sm) !important;
+  }
+
+  /* === Index rows === */
+  .index-row {
+    padding: 8px 0 !important;
+  }
+
+  /* === Scrollable tables that aren't holdings/screener === */
+  .card:has(> table) {
+    overflow-x: auto;
+  }
+
+  /* === Analysis text === */
+  .analysis-card {
+    padding: 12px !important;
+    font-size: var(--font-size-sm) !important;
+  }
+
+  /* === Allocation legend === */
+  .allocation-legend {
+    gap: 6px 12px !important;
+    font-size: var(--font-size-xs) !important;
+  }
+}
+
+/* ========== Bottom Navigation Bar (mobile only) ========== */
+.mobile-bottom-nav {
+  display: none; /* hidden on desktop, shown via media query above */
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: var(--surface-bg-elevated, #111827);
+  border-top: 1px solid var(--border-default, rgba(255,255,255,0.08));
+  z-index: 100;
+  align-items: center;
+  justify-content: space-around;
+  padding: 0 4px;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-sizing: content-box;
+}
+
+.mobile-bottom-nav .mob-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 0;
+  cursor: pointer;
+  color: var(--text-tertiary, #64748B);
+  text-decoration: none;
+  min-width: 52px;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 0.15s ease;
+}
+
+.mobile-bottom-nav .mob-nav-item.mob-active {
+  color: #EF4444;
+}
+
+.mobile-bottom-nav .mob-nav-item svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.5;
+}
+
+.mobile-bottom-nav .mob-nav-label {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.2;
+}
