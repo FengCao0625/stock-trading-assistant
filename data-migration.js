@@ -70,9 +70,9 @@
       var data = _collectData();
       var json = JSON.stringify(data);
       var encoded = btoa(unescape(encodeURIComponent(json)));
-      // Split into chunks to keep URL reasonable (GitHub Pages has limits)
-      // Use current page as base
-      var base = window.location.href.split('#')[0].split('?')[0];
+      // Always use GitHub Pages URL so the link works on any device
+      var page = window.location.pathname.split('/').pop() || 'dashboard.html';
+      var base = 'https://fengcao0625.github.io/stock-trading-assistant/' + page;
       return base + '#sync=' + encoded;
     },
 
